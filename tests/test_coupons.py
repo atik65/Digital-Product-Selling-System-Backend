@@ -4,14 +4,14 @@ from datetime import datetime, timezone, timedelta
 def test_coupon_validation_percentage_and_fixed(client, admin_auth_headers, auth_headers):
     # 1. Create a product and package for testing
     p_res = client.post(
-        "/admin/products",
+        "/api/v1/admin/products",
         json={"name": "Canva Subscription", "slug": "canva-sub"},
         headers=admin_auth_headers,
     )
     product_id = p_res.json()["data"]["id"]
 
     pkg_res = client.post(
-        f"/admin/products/{product_id}/packages",
+        f"/api/v1/admin/products/{product_id}/packages",
         json={"name": "1 Year", "price": 500.0, "is_active": True},
         headers=admin_auth_headers,
     )
@@ -19,7 +19,7 @@ def test_coupon_validation_percentage_and_fixed(client, admin_auth_headers, auth
 
     # 2. Admin creates 10% coupon with 30 BDT cap and min order 400 BDT
     c1_res = client.post(
-        "/admin/coupons",
+        "/api/v1/admin/coupons",
         json={
             "code": "TEST10",
             "type": "PERCENTAGE",
@@ -36,7 +36,7 @@ def test_coupon_validation_percentage_and_fixed(client, admin_auth_headers, auth
 
     # 3. Validate coupon: 10% of 500 is 50, but max discount is 30, so discount should be 30
     val_res = client.post(
-        "/coupons/validate",
+        "/api/v1/coupons/validate",
         json={"code": "TEST10", "package_id": package_id, "quantity": 1},
         headers=auth_headers,
     )
@@ -47,7 +47,7 @@ def test_coupon_validation_percentage_and_fixed(client, admin_auth_headers, auth
 
     # 4. Admin creates fixed 50 BDT coupon with min order 600
     client.post(
-        "/admin/coupons",
+        "/api/v1/admin/coupons",
         json={
             "code": "FIXED50",
             "type": "FIXED",
@@ -60,7 +60,7 @@ def test_coupon_validation_percentage_and_fixed(client, admin_auth_headers, auth
 
     # Validate against quantity 1 (subtotal 500 < min 600) -> fails with 400
     fail_res = client.post(
-        "/coupons/validate",
+        "/api/v1/coupons/validate",
         json={"code": "FIXED50", "package_id": package_id, "quantity": 1},
         headers=auth_headers,
     )
@@ -68,7 +68,7 @@ def test_coupon_validation_percentage_and_fixed(client, admin_auth_headers, auth
 
     # Validate against quantity 2 (subtotal 1000 >= min 600) -> succeeds with discount 50
     success_res = client.post(
-        "/coupons/validate",
+        "/api/v1/coupons/validate",
         json={"code": "FIXED50", "package_id": package_id, "quantity": 2},
         headers=auth_headers,
     )
@@ -79,12 +79,12 @@ def test_coupon_validation_percentage_and_fixed(client, admin_auth_headers, auth
 def test_coupon_expired_or_invalid(client, admin_auth_headers, auth_headers):
     # Create product & package
     p_res = client.post(
-        "/admin/products",
+        "/api/v1/admin/products",
         json={"name": "Prime Video", "slug": "prime-video"},
         headers=admin_auth_headers,
     )
     pkg_res = client.post(
-        f"/admin/products/{p_res.json()['data']['id']}/packages",
+        f"/api/v1/admin/products/{p_res.json()['data']['id']}/packages",
         json={"name": "1 Month", "price": 200.0, "is_active": True},
         headers=admin_auth_headers,
     )
@@ -93,7 +93,7 @@ def test_coupon_expired_or_invalid(client, admin_auth_headers, auth_headers):
     # Expired coupon
     yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
     client.post(
-        "/admin/coupons",
+        "/api/v1/admin/coupons",
         json={
             "code": "EXPIRED",
             "type": "FIXED",
@@ -105,7 +105,7 @@ def test_coupon_expired_or_invalid(client, admin_auth_headers, auth_headers):
     )
 
     exp_res = client.post(
-        "/coupons/validate",
+        "/api/v1/coupons/validate",
         json={"code": "EXPIRED", "package_id": pkg_id, "quantity": 1},
         headers=auth_headers,
     )
@@ -113,7 +113,7 @@ def test_coupon_expired_or_invalid(client, admin_auth_headers, auth_headers):
 
     # Nonexistent coupon
     none_res = client.post(
-        "/coupons/validate",
+        "/api/v1/coupons/validate",
         json={"code": "NONEXISTENT", "package_id": pkg_id, "quantity": 1},
         headers=auth_headers,
     )

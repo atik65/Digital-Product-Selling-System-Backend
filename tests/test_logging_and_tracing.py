@@ -30,7 +30,7 @@ def test_response_preserves_custom_request_id(client):
 def test_error_response_contains_request_id(client):
     """Verify that 404 or other errors include X-Request-ID in both header and body."""
     custom_id = "err-trace-9999"
-    response = client.get("/products/999999", headers={"X-Request-ID": custom_id})
+    response = client.get("/api/v1/products/999999", headers={"X-Request-ID": custom_id})
     assert response.status_code == 404
     assert response.headers.get("X-Request-ID") == custom_id
     body = response.json()

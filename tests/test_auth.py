@@ -7,7 +7,7 @@ def test_admin_login_success(client, admin_user):
         "email": admin_user.email,
         "password": "adminpass123",
     }
-    response = client.post("/auth/admin/login", json=payload)
+    response = client.post("/api/v1/auth/admin/login", json=payload)
     assert response.status_code == 200
 
     data = response.json()
@@ -24,7 +24,7 @@ def test_admin_login_invalid_password(client, admin_user):
         "email": admin_user.email,
         "password": "wrongadminpass",
     }
-    response = client.post("/auth/admin/login", json=payload)
+    response = client.post("/api/v1/auth/admin/login", json=payload)
     assert response.status_code == 401
     assert response.json()["success"] is False
 
@@ -35,7 +35,7 @@ def test_admin_login_non_admin_forbidden(client, test_user):
         "email": test_user.email,
         "password": "password123",
     }
-    response = client.post("/auth/admin/login", json=payload)
+    response = client.post("/api/v1/auth/admin/login", json=payload)
     assert response.status_code == 403
     assert response.json()["success"] is False
 
@@ -52,7 +52,7 @@ def test_google_login_new_user_and_existing(mock_verify, client):
 
     # 1. First login creates user & wallet
     payload = {"id_token": "fake-google-jwt-token"}
-    res1 = client.post("/auth/google", json=payload)
+    res1 = client.post("/api/v1/auth/google", json=payload)
     assert res1.status_code == 200
     data1 = res1.json()["data"]
     assert data1["user"]["email"] == "googler@example.com"
@@ -60,15 +60,15 @@ def test_google_login_new_user_and_existing(mock_verify, client):
     assert "access_token" in data1
 
     # 2. Second login retrieves same user
-    res2 = client.post("/auth/google", json=payload)
+    res2 = client.post("/api/v1/auth/google", json=payload)
     assert res2.status_code == 200
     data2 = res2.json()["data"]
     assert data2["user"]["id"] == data1["user"]["id"]
 
 
 def test_get_current_user_profile_authenticated(client, auth_headers, test_user):
-    """Test GET /auth/me with valid Bearer token returns customer profile."""
-    response = client.get("/auth/me", headers=auth_headers)
+    """Test GET /api/v1/auth/me with valid Bearer token returns customer profile."""
+    response = client.get("/api/v1/auth/me", headers=auth_headers)
     assert response.status_code == 200
 
     data = response.json()
@@ -78,16 +78,16 @@ def test_get_current_user_profile_authenticated(client, auth_headers, test_user)
 
 
 def test_get_current_user_profile_unauthorized(client):
-    """Test GET /auth/me without token returns 401 Unauthorized."""
-    response = client.get("/auth/me")
+    """Test GET /api/v1/auth/me without token returns 401 Unauthorized."""
+    response = client.get("/api/v1/auth/me")
     assert response.status_code == 401
     assert response.json()["success"] is False
 
 
 def test_update_current_user_profile(client, auth_headers):
-    """Test PATCH /auth/me updates customer name and phone."""
+    """Test PATCH /api/v1/auth/me updates customer name and phone."""
     payload = {"name": "Updated Customer Name", "phone": "+8801700000000"}
-    response = client.patch("/auth/me", headers=auth_headers, json=payload)
+    response = client.patch("/api/v1/auth/me", headers=auth_headers, json=payload)
     assert response.status_code == 200
     data = response.json()
     assert data["data"]["name"] == "Updated Customer Name"
@@ -97,12 +97,12 @@ def test_update_current_user_profile(client, auth_headers):
 def test_refresh_token_success(client, admin_user):
     """Test refreshing access token using a valid refresh token."""
     login_res = client.post(
-        "/auth/admin/login",
+        "/api/v1/auth/admin/login",
         json={"email": admin_user.email, "password": "adminpass123"},
     )
     refresh_token = login_res.json()["data"]["refresh_token"]
 
-    response = client.post("/auth/refresh", json={"refresh_token": refresh_token})
+    response = client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token})
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True

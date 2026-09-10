@@ -16,7 +16,7 @@ user_repo = UserRepository()
 
 
 @router.get(
-    "/",
+    "",
     response_model=StandardResponse[PaginatedData[UserResponse]],
     status_code=status.HTTP_200_OK,
     summary="List all users with search and pagination",

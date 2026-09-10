@@ -1,14 +1,14 @@
 def test_payment_submission_and_admin_verification(client, admin_auth_headers, auth_headers):
     # 1. Product & Package
     p_res = client.post(
-        "/admin/products",
+        "/api/v1/admin/products",
         json={"name": "Disney+ Hotstar", "slug": "disney-hotstar"},
         headers=admin_auth_headers,
     )
     product_id = p_res.json()["data"]["id"]
 
     pkg_res = client.post(
-        f"/admin/products/{product_id}/packages",
+        f"/api/v1/admin/products/{product_id}/packages",
         json={"name": "Super 1 Year", "price": 400.0, "is_active": True},
         headers=admin_auth_headers,
     )
@@ -16,7 +16,7 @@ def test_payment_submission_and_admin_verification(client, admin_auth_headers, a
 
     # 2. Payment Method
     pm_res = client.post(
-        "/admin/payment-methods",
+        "/api/v1/admin/payment-methods",
         json={"name": "Nagad Personal", "account_number": "01700000000"},
         headers=admin_auth_headers,
     )
@@ -24,7 +24,7 @@ def test_payment_submission_and_admin_verification(client, admin_auth_headers, a
 
     # 3. Direct Order
     order_res = client.post(
-        "/orders",
+        "/api/v1/orders",
         json={
             "package_id": package_id,
             "quantity": 1,
@@ -39,7 +39,7 @@ def test_payment_submission_and_admin_verification(client, admin_auth_headers, a
 
     # 4. Submit Payment
     pay_res = client.post(
-        "/payments/submit",
+        "/api/v1/payments/submit",
         json={
             "order_id": order_id,
             "payment_method_id": pm_id,
@@ -56,13 +56,13 @@ def test_payment_submission_and_admin_verification(client, admin_auth_headers, a
     assert pay_data["transaction_id"] == "TRX987654321"
 
     # 5. Admin lists payments
-    admin_list = client.get("/admin/payments", headers=admin_auth_headers)
+    admin_list = client.get("/api/v1/admin/payments", headers=admin_auth_headers)
     assert admin_list.status_code == 200
     assert any(p["id"] == payment_id for p in admin_list.json()["data"]["items"])
 
     # 6. Admin verifies payment
     verify_res = client.post(
-        f"/admin/payments/{payment_id}/verify",
+        f"/api/v1/admin/payments/{payment_id}/verify",
         json={"admin_note": "TRX matched on Nagad statement"},
         headers=admin_auth_headers,
     )
@@ -70,7 +70,7 @@ def test_payment_submission_and_admin_verification(client, admin_auth_headers, a
     assert verify_res.json()["data"]["status"] == "VERIFIED"
 
     # 7. Check Order is now PAID
-    ord_check = client.get(f"/orders/{order_number}", headers=auth_headers)
+    ord_check = client.get(f"/api/v1/orders/{order_number}", headers=auth_headers)
     assert ord_check.status_code == 200
     assert ord_check.json()["data"]["status"] == "PAID"
 
@@ -78,24 +78,24 @@ def test_payment_submission_and_admin_verification(client, admin_auth_headers, a
 def test_payment_rejection(client, admin_auth_headers, auth_headers):
     # Setup order
     p_res = client.post(
-        "/admin/products",
+        "/api/v1/admin/products",
         json={"name": "Duolingo Plus", "slug": "duolingo-plus"},
         headers=admin_auth_headers,
     )
     pkg_res = client.post(
-        f"/admin/products/{p_res.json()['data']['id']}/packages",
+        f"/api/v1/admin/products/{p_res.json()['data']['id']}/packages",
         json={"name": "Monthly", "price": 150.0},
         headers=admin_auth_headers,
     )
     pm_res = client.post(
-        "/admin/payment-methods",
+        "/api/v1/admin/payment-methods",
         json={"name": "bKash Personal", "account_number": "01822222222"},
         headers=admin_auth_headers,
     )
     pm_id = pm_res.json()["data"]["id"]
 
     order_res = client.post(
-        "/orders",
+        "/api/v1/orders",
         json={
             "package_id": pkg_res.json()["data"]["id"],
             "quantity": 1,
@@ -108,7 +108,7 @@ def test_payment_rejection(client, admin_auth_headers, auth_headers):
 
     # Submit fake payment
     pay_res = client.post(
-        "/payments/submit",
+        "/api/v1/payments/submit",
         json={
             "order_id": order_id,
             "payment_method_id": pm_id,
@@ -122,7 +122,7 @@ def test_payment_rejection(client, admin_auth_headers, auth_headers):
 
     # Admin rejects
     rej_res = client.post(
-        f"/admin/payments/{payment_id}/reject",
+        f"/api/v1/admin/payments/{payment_id}/reject",
         json={"reason": "Transaction ID not found in statement"},
         headers=admin_auth_headers,
     )

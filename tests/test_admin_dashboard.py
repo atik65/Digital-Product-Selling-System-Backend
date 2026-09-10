@@ -1,10 +1,10 @@
 def test_admin_dashboard_summary_and_activity(client, admin_auth_headers, auth_headers):
     # 1. Customer cannot access admin dashboard
-    forbidden_res = client.get("/admin/dashboard/summary", headers=auth_headers)
+    forbidden_res = client.get("/api/v1/admin/dashboard/summary", headers=auth_headers)
     assert forbidden_res.status_code == 403
 
     # 2. Admin retrieves summary
-    summary_res = client.get("/admin/dashboard/summary", headers=admin_auth_headers)
+    summary_res = client.get("/api/v1/admin/dashboard/summary", headers=admin_auth_headers)
     assert summary_res.status_code == 200
     s_data = summary_res.json()["data"]
     assert "today_orders" in s_data
@@ -16,7 +16,7 @@ def test_admin_dashboard_summary_and_activity(client, admin_auth_headers, auth_h
     assert s_data["total_users"] >= 1
 
     # 3. Admin retrieves recent activity
-    act_res = client.get("/admin/dashboard/recent-activity", headers=admin_auth_headers)
+    act_res = client.get("/api/v1/admin/dashboard/recent-activity", headers=admin_auth_headers)
     assert act_res.status_code == 200
     a_data = act_res.json()["data"]
     assert "recent_orders" in a_data

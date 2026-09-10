@@ -39,7 +39,7 @@ async def upload_file(
 
 
 @router.delete(
-    "/",
+    "",
     response_model=StandardResponse[dict],
     status_code=status.HTTP_200_OK,
     summary="Delete an uploaded file by its URL",

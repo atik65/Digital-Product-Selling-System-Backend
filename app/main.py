@@ -84,9 +84,11 @@ all_routers = [
 
 for router in all_routers:
     api_v1_router.include_router(router)
-    app.include_router(router)
 
 app.include_router(api_v1_router)
+
+# Root-level health check for container orchestrators
+app.include_router(health.router)
 
 # 7. Ensure uploads directory exists and mount static media files
 Path("uploads").mkdir(parents=True, exist_ok=True)

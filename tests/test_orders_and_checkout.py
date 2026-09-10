@@ -1,7 +1,7 @@
 def setup_test_catalog(client, admin_auth_headers):
     # Create product
     p_res = client.post(
-        "/admin/products",
+        "/api/v1/admin/products",
         json={
             "name": "Netflix Direct",
             "slug": "netflix-direct",
@@ -13,7 +13,7 @@ def setup_test_catalog(client, admin_auth_headers):
 
     # Add required input field
     client.post(
-        f"/admin/products/{product_id}/fields",
+        f"/api/v1/admin/products/{product_id}/fields",
         json={
             "name": "profile_email",
             "label": "Profile Email",
@@ -26,7 +26,7 @@ def setup_test_catalog(client, admin_auth_headers):
 
     # Add package
     pkg_res = client.post(
-        f"/admin/products/{product_id}/packages",
+        f"/api/v1/admin/products/{product_id}/packages",
         json={
             "name": "1 Screen Ultra",
             "price": 300.0,
@@ -38,7 +38,7 @@ def setup_test_catalog(client, admin_auth_headers):
 
     # Add coupon
     client.post(
-        "/admin/coupons",
+        "/api/v1/admin/coupons",
         json={
             "code": "DISCOUNT50",
             "type": "FIXED",
@@ -57,7 +57,7 @@ def test_checkout_preview_and_direct_order(client, admin_auth_headers, auth_head
 
     # 1. Preview checkout
     preview_res = client.post(
-        "/checkout/preview",
+        "/api/v1/checkout/preview",
         json={
             "package_id": package_id,
             "quantity": 2,
@@ -74,7 +74,7 @@ def test_checkout_preview_and_direct_order(client, admin_auth_headers, auth_head
 
     # 2. Place order with missing required input field -> 400 error
     bad_order_res = client.post(
-        "/orders",
+        "/api/v1/orders",
         json={
             "package_id": package_id,
             "quantity": 1,
@@ -86,7 +86,7 @@ def test_checkout_preview_and_direct_order(client, admin_auth_headers, auth_head
 
     # 3. Place order successfully
     order_res = client.post(
-        "/orders",
+        "/api/v1/orders",
         json={
             "package_id": package_id,
             "quantity": 1,
@@ -105,23 +105,23 @@ def test_checkout_preview_and_direct_order(client, admin_auth_headers, auth_head
     assert order_data["status"] in ["PENDING", "PAYMENT_PENDING"]
 
     # 4. View in my-orders
-    my_res = client.get("/orders/my-orders", headers=auth_headers)
+    my_res = client.get("/api/v1/orders/my-orders", headers=auth_headers)
     assert my_res.status_code == 200
     assert len(my_res.json()["data"]["items"]) >= 1
     assert my_res.json()["data"]["pagination"]["total"] >= 1
 
     # 5. View single order
-    single_res = client.get(f"/orders/{order_number}", headers=auth_headers)
+    single_res = client.get(f"/api/v1/orders/{order_number}", headers=auth_headers)
     assert single_res.status_code == 200
     assert single_res.json()["data"]["order_number"] == order_number
 
     # 6. Admin can see order and update status
-    admin_list = client.get("/admin/orders", headers=admin_auth_headers)
+    admin_list = client.get("/api/v1/admin/orders", headers=admin_auth_headers)
     assert admin_list.status_code == 200
     order_id = order_data["id"]
 
     status_res = client.patch(
-        f"/admin/orders/{order_id}/status",
+        f"/api/v1/admin/orders/{order_id}/status",
         json={"status": "PROCESSING"},
         headers=admin_auth_headers,
     )
@@ -130,7 +130,7 @@ def test_checkout_preview_and_direct_order(client, admin_auth_headers, auth_head
 
     # 7. Admin can add delivery fulfillment note
     note_res = client.patch(
-        f"/admin/orders/{order_id}/note",
+        f"/api/v1/admin/orders/{order_id}/note",
         json={"admin_note": "Delivered Pin: 4920"},
         headers=admin_auth_headers,
     )
@@ -142,7 +142,7 @@ def test_cancel_pending_order(client, admin_auth_headers, auth_headers):
     product_id, package_id = setup_test_catalog(client, admin_auth_headers)
 
     order_res = client.post(
-        "/orders",
+        "/api/v1/orders",
         json={
             "package_id": package_id,
             "quantity": 1,
@@ -153,6 +153,6 @@ def test_cancel_pending_order(client, admin_auth_headers, auth_headers):
     order_number = order_res.json()["data"]["order_number"]
 
     # Customer cancels order
-    cancel_res = client.post(f"/orders/{order_number}/cancel", headers=auth_headers)
+    cancel_res = client.post(f"/api/v1/orders/{order_number}/cancel", headers=auth_headers)
     assert cancel_res.status_code == 200
     assert cancel_res.json()["data"]["status"] == "CANCELLED"

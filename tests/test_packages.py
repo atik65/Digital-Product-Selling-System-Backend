@@ -1,7 +1,7 @@
 def test_package_crud_and_status(client, admin_auth_headers):
     # 1. Create product first
     p_res = client.post(
-        "/admin/products",
+        "/api/v1/admin/products",
         json={"name": "Spotify Family", "slug": "spotify-family"},
         headers=admin_auth_headers,
     )
@@ -9,7 +9,7 @@ def test_package_crud_and_status(client, admin_auth_headers):
 
     # 2. Add package
     pkg_res = client.post(
-        f"/admin/products/{product_id}/packages",
+        f"/api/v1/admin/products/{product_id}/packages",
         json={
             "name": "1 Month Plan",
             "price": 199.0,
@@ -27,13 +27,13 @@ def test_package_crud_and_status(client, admin_auth_headers):
     assert pkg_data["price"] == 199.0
 
     # 3. Public list packages
-    list_res = client.get(f"/products/{product_id}/packages")
+    list_res = client.get(f"/api/v1/products/{product_id}/packages")
     assert list_res.status_code == 200
     assert len(list_res.json()["data"]) == 1
 
     # 4. Update package details
     upd_res = client.put(
-        f"/admin/packages/{package_id}",
+        f"/api/v1/admin/packages/{package_id}",
         json={"name": "1 Month Ultra", "price": 220.0},
         headers=admin_auth_headers,
     )
@@ -43,7 +43,7 @@ def test_package_crud_and_status(client, admin_auth_headers):
 
     # 5. Toggle status
     status_res = client.patch(
-        f"/admin/packages/{package_id}/status",
+        f"/api/v1/admin/packages/{package_id}/status",
         json={"is_active": False},
         headers=admin_auth_headers,
     )
@@ -51,9 +51,9 @@ def test_package_crud_and_status(client, admin_auth_headers):
     assert status_res.json()["data"]["is_active"] is False
 
     # Should no longer be visible in public active packages
-    list_after_deactivate = client.get(f"/products/{product_id}/packages")
+    list_after_deactivate = client.get(f"/api/v1/products/{product_id}/packages")
     assert len(list_after_deactivate.json()["data"]) == 0
 
     # 6. Delete package
-    del_res = client.delete(f"/admin/packages/{package_id}", headers=admin_auth_headers)
+    del_res = client.delete(f"/api/v1/admin/packages/{package_id}", headers=admin_auth_headers)
     assert del_res.status_code == 200
