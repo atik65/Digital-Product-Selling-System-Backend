@@ -11,7 +11,9 @@ from app.core.exceptions import DatabaseException
 class DashboardRepository:
     def get_summary(self, db: Session) -> dict:
         try:
-            today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+            today_start = datetime.now(timezone.utc).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
 
             # Today's orders count
             today_orders = (
@@ -44,7 +46,10 @@ class DashboardRepository:
             # Pending orders
             pending_orders = (
                 db.query(func.count(Order.id))
-                .filter(Order.status.in_(["PENDING", "PAYMENT_PENDING"]), Order.is_deleted.is_(False))
+                .filter(
+                    Order.status.in_(["PENDING", "PAYMENT_PENDING"]),
+                    Order.is_deleted.is_(False),
+                )
                 .scalar()
                 or 0
             )
@@ -74,7 +79,9 @@ class DashboardRepository:
                 "pending_topups": int(pending_topups),
             }
         except Exception as e:
-            raise DatabaseException(f"Failed to calculate dashboard summary: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to calculate dashboard summary: {str(e)}", original_exception=e
+            )
 
     def get_recent_activity(self, db: Session, limit: int = 5) -> dict:
         try:
@@ -100,7 +107,9 @@ class DashboardRepository:
                         "order_number": o.order_number,
                         "total_amount": o.total_amount,
                         "status": o.status,
-                        "created_at": o.created_at.isoformat() if o.created_at else None,
+                        "created_at": o.created_at.isoformat()
+                        if o.created_at
+                        else None,
                     }
                     for o in recent_orders
                 ],
@@ -111,10 +120,14 @@ class DashboardRepository:
                         "amount": p.amount,
                         "transaction_id": p.transaction_id,
                         "status": p.status,
-                        "created_at": p.created_at.isoformat() if p.created_at else None,
+                        "created_at": p.created_at.isoformat()
+                        if p.created_at
+                        else None,
                     }
                     for p in recent_payments
                 ],
             }
         except Exception as e:
-            raise DatabaseException(f"Failed to fetch recent activity: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to fetch recent activity: {str(e)}", original_exception=e
+            )

@@ -8,7 +8,9 @@ def test_topup_submission_and_admin_approval(client, admin_auth_headers, auth_he
     pm_id = pm_res.json()["data"]["id"]
 
     # Initial wallet balance
-    init_w = client.get("/api/v1/wallet/me", headers=auth_headers).json()["data"]["balance"]
+    init_w = client.get("/api/v1/wallet/me", headers=auth_headers).json()["data"][
+        "balance"
+    ]
 
     # 2. Customer submits top-up for 500 BDT
     topup_res = client.post(
@@ -47,11 +49,15 @@ def test_topup_submission_and_admin_approval(client, admin_auth_headers, auth_he
     assert appr_res.json()["data"]["status"] == "APPROVED"
 
     # 6. Check customer wallet was credited
-    new_w = client.get("/api/v1/wallet/me", headers=auth_headers).json()["data"]["balance"]
+    new_w = client.get("/api/v1/wallet/me", headers=auth_headers).json()["data"][
+        "balance"
+    ]
     assert new_w == init_w + 500.0
 
     # 7. Check wallet transaction ledger
-    txs = client.get("/api/v1/wallet/transactions", headers=auth_headers).json()["data"]["items"]
+    txs = client.get("/api/v1/wallet/transactions", headers=auth_headers).json()[
+        "data"
+    ]["items"]
     assert any(tx["type"] == "TOPUP" and tx["amount"] == 500.0 for tx in txs)
 
 
@@ -63,7 +69,9 @@ def test_topup_rejection(client, admin_auth_headers, auth_headers):
     )
     pm_id = pm_res.json()["data"]["id"]
 
-    init_w = client.get("/api/v1/wallet/me", headers=auth_headers).json()["data"]["balance"]
+    init_w = client.get("/api/v1/wallet/me", headers=auth_headers).json()["data"][
+        "balance"
+    ]
 
     topup_res = client.post(
         "/api/v1/wallet/topup",
@@ -87,5 +95,7 @@ def test_topup_rejection(client, admin_auth_headers, auth_headers):
     assert rej_res.json()["data"]["status"] == "REJECTED"
 
     # Wallet remains unchanged
-    after_w = client.get("/api/v1/wallet/me", headers=auth_headers).json()["data"]["balance"]
+    after_w = client.get("/api/v1/wallet/me", headers=auth_headers).json()["data"][
+        "balance"
+    ]
     assert after_w == init_w

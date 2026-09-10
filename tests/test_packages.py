@@ -55,5 +55,7 @@ def test_package_crud_and_status(client, admin_auth_headers):
     assert len(list_after_deactivate.json()["data"]) == 0
 
     # 6. Delete package
-    del_res = client.delete(f"/api/v1/admin/packages/{package_id}", headers=admin_auth_headers)
+    del_res = client.delete(
+        f"/api/v1/admin/packages/{package_id}", headers=admin_auth_headers
+    )
     assert del_res.status_code == 200

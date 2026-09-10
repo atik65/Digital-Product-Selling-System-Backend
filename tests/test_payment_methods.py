@@ -39,7 +39,9 @@ def test_payment_methods_flow(client, admin_auth_headers, auth_headers):
     assert upd_res.json()["data"]["account_number"] == "01811111111"
 
     # 5. Admin deletes payment method
-    del_res = client.delete(f"/api/v1/admin/payment-methods/{method_id}", headers=admin_auth_headers)
+    del_res = client.delete(
+        f"/api/v1/admin/payment-methods/{method_id}", headers=admin_auth_headers
+    )
     assert del_res.status_code == 200
 
     # Verify not found in public active methods

@@ -7,7 +7,12 @@ class Package(BaseAuditModel):
     __tablename__ = "packages"
 
     id = Column(Integer, primary_key=True, index=True)
-    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(
+        Integer,
+        ForeignKey("products.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     name = Column(String, nullable=False)
     price = Column(Float, nullable=False)
     compare_price = Column(Float, nullable=True)

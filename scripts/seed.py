@@ -82,9 +82,24 @@ def seed_users_and_wallets(db) -> None:
 
 def seed_catalog(db) -> None:
     categories_data = [
-        {"name": "Streaming", "slug": "streaming", "description": "OTT and entertainment platforms", "sort_order": 1},
-        {"name": "Productivity", "slug": "productivity", "description": "Design, work and utility subscriptions", "sort_order": 2},
-        {"name": "Gaming", "slug": "gaming", "description": "In-game currencies and top-ups", "sort_order": 3},
+        {
+            "name": "Streaming",
+            "slug": "streaming",
+            "description": "OTT and entertainment platforms",
+            "sort_order": 1,
+        },
+        {
+            "name": "Productivity",
+            "slug": "productivity",
+            "description": "Design, work and utility subscriptions",
+            "sort_order": 2,
+        },
+        {
+            "name": "Gaming",
+            "slug": "gaming",
+            "description": "In-game currencies and top-ups",
+            "sort_order": 3,
+        },
     ]
 
     cat_map = {}
@@ -107,12 +122,38 @@ def seed_catalog(db) -> None:
             "instructions": "Enter your account email or profile name. Delivery in 10-30 mins.",
             "sort_order": 1,
             "fields": [
-                {"name": "account_email", "label": "Account Email", "type": "email", "placeholder": "user@gmail.com", "is_required": True, "sort_order": 1},
-                {"name": "profile_name", "label": "Profile Name", "type": "text", "placeholder": "e.g. My Profile", "is_required": False, "sort_order": 2},
+                {
+                    "name": "account_email",
+                    "label": "Account Email",
+                    "type": "email",
+                    "placeholder": "user@gmail.com",
+                    "is_required": True,
+                    "sort_order": 1,
+                },
+                {
+                    "name": "profile_name",
+                    "label": "Profile Name",
+                    "type": "text",
+                    "placeholder": "e.g. My Profile",
+                    "is_required": False,
+                    "sort_order": 2,
+                },
             ],
             "packages": [
-                {"name": "1 Month Ultra HD", "price": 450.0, "compare_price": 550.0, "duration": "30 Days", "sort_order": 1},
-                {"name": "3 Months Ultra HD", "price": 1250.0, "compare_price": 1500.0, "duration": "90 Days", "sort_order": 2},
+                {
+                    "name": "1 Month Ultra HD",
+                    "price": 450.0,
+                    "compare_price": 550.0,
+                    "duration": "30 Days",
+                    "sort_order": 1,
+                },
+                {
+                    "name": "3 Months Ultra HD",
+                    "price": 1250.0,
+                    "compare_price": 1500.0,
+                    "duration": "90 Days",
+                    "sort_order": 2,
+                },
             ],
         },
         {
@@ -123,11 +164,30 @@ def seed_catalog(db) -> None:
             "instructions": "Enter the email associated with your Canva account.",
             "sort_order": 2,
             "fields": [
-                {"name": "canva_email", "label": "Canva Account Email", "type": "email", "placeholder": "user@canva.com", "is_required": True, "sort_order": 1},
+                {
+                    "name": "canva_email",
+                    "label": "Canva Account Email",
+                    "type": "email",
+                    "placeholder": "user@canva.com",
+                    "is_required": True,
+                    "sort_order": 1,
+                },
             ],
             "packages": [
-                {"name": "1 Year Invite", "price": 350.0, "compare_price": 500.0, "duration": "1 Year", "sort_order": 1},
-                {"name": "Lifetime Educational", "price": 600.0, "compare_price": 900.0, "duration": "Lifetime", "sort_order": 2},
+                {
+                    "name": "1 Year Invite",
+                    "price": 350.0,
+                    "compare_price": 500.0,
+                    "duration": "1 Year",
+                    "sort_order": 1,
+                },
+                {
+                    "name": "Lifetime Educational",
+                    "price": 600.0,
+                    "compare_price": 900.0,
+                    "duration": "Lifetime",
+                    "sort_order": 2,
+                },
             ],
         },
         {
@@ -138,11 +198,30 @@ def seed_catalog(db) -> None:
             "instructions": "Provide your in-game Player ID carefully.",
             "sort_order": 3,
             "fields": [
-                {"name": "player_id", "label": "Player ID (UID)", "type": "number", "placeholder": "e.g. 192847291", "is_required": True, "sort_order": 1},
+                {
+                    "name": "player_id",
+                    "label": "Player ID (UID)",
+                    "type": "number",
+                    "placeholder": "e.g. 192847291",
+                    "is_required": True,
+                    "sort_order": 1,
+                },
             ],
             "packages": [
-                {"name": "115 Diamonds", "price": 85.0, "compare_price": 95.0, "duration": "Instant", "sort_order": 1},
-                {"name": "575 Diamonds", "price": 420.0, "compare_price": 475.0, "duration": "Instant", "sort_order": 2},
+                {
+                    "name": "115 Diamonds",
+                    "price": 85.0,
+                    "compare_price": 95.0,
+                    "duration": "Instant",
+                    "sort_order": 1,
+                },
+                {
+                    "name": "575 Diamonds",
+                    "price": 420.0,
+                    "compare_price": 475.0,
+                    "duration": "Instant",
+                    "sort_order": 2,
+                },
             ],
         },
     ]
@@ -173,13 +252,30 @@ def seed_catalog(db) -> None:
 
 def seed_payment_methods_and_coupons(db) -> None:
     methods = [
-        {"name": "bKash Personal", "account_number": "01812345678", "instructions": "Use Send Money option from bKash app.", "sort_order": 1},
-        {"name": "Nagad Personal", "account_number": "01712345678", "instructions": "Send Money to Nagad personal number.", "sort_order": 2},
-        {"name": "Rocket Personal", "account_number": "01912345678", "instructions": "Send Money via Rocket wallet.", "sort_order": 3},
+        {
+            "name": "bKash Personal",
+            "account_number": "01812345678",
+            "instructions": "Use Send Money option from bKash app.",
+            "sort_order": 1,
+        },
+        {
+            "name": "Nagad Personal",
+            "account_number": "01712345678",
+            "instructions": "Send Money to Nagad personal number.",
+            "sort_order": 2,
+        },
+        {
+            "name": "Rocket Personal",
+            "account_number": "01912345678",
+            "instructions": "Send Money via Rocket wallet.",
+            "sort_order": 3,
+        },
     ]
 
     for m_data in methods:
-        existing = db.query(PaymentMethod).filter(PaymentMethod.name == m_data["name"]).first()
+        existing = (
+            db.query(PaymentMethod).filter(PaymentMethod.name == m_data["name"]).first()
+        )
         if not existing:
             method = PaymentMethod(**m_data)
             db.add(method)
@@ -187,8 +283,23 @@ def seed_payment_methods_and_coupons(db) -> None:
             print(f"  [CREATED] Payment Method '{method.name}'")
 
     coupons = [
-        {"code": "WELCOME50", "type": "FIXED", "value": 50.0, "minimum_order_amount": 300.0, "usage_limit": 100, "per_user_limit": 1},
-        {"code": "EID10", "type": "PERCENTAGE", "value": 10.0, "max_discount": 200.0, "minimum_order_amount": 400.0, "usage_limit": 500, "per_user_limit": 2},
+        {
+            "code": "WELCOME50",
+            "type": "FIXED",
+            "value": 50.0,
+            "minimum_order_amount": 300.0,
+            "usage_limit": 100,
+            "per_user_limit": 1,
+        },
+        {
+            "code": "EID10",
+            "type": "PERCENTAGE",
+            "value": 10.0,
+            "max_discount": 200.0,
+            "minimum_order_amount": 400.0,
+            "usage_limit": 500,
+            "per_user_limit": 2,
+        },
     ]
 
     for c_data in coupons:
@@ -244,8 +355,20 @@ def seed_marketing_and_lottery(db) -> None:
         db.refresh(lottery)
 
         prizes = [
-            {"lottery_id": lottery.id, "discount_type": "PERCENTAGE", "discount_value": 50.0, "probability": 0.20, "quantity": 10},
-            {"lottery_id": lottery.id, "discount_type": "PERCENTAGE", "discount_value": 20.0, "probability": 0.50, "quantity": 50},
+            {
+                "lottery_id": lottery.id,
+                "discount_type": "PERCENTAGE",
+                "discount_value": 50.0,
+                "probability": 0.20,
+                "quantity": 10,
+            },
+            {
+                "lottery_id": lottery.id,
+                "discount_type": "PERCENTAGE",
+                "discount_value": 20.0,
+                "probability": 0.50,
+                "quantity": 50,
+            },
         ]
         for p_data in prizes:
             db.add(LotteryPrize(**p_data))

@@ -14,21 +14,38 @@ class Lottery(BaseAuditModel):
     is_active = Column(Boolean, default=True, nullable=False)
 
     # Relationships
-    prizes = relationship("LotteryPrize", back_populates="lottery", cascade="all, delete-orphan")
-    entries = relationship("LotteryEntry", back_populates="lottery", cascade="all, delete-orphan")
+    prizes = relationship(
+        "LotteryPrize", back_populates="lottery", cascade="all, delete-orphan"
+    )
+    entries = relationship(
+        "LotteryEntry", back_populates="lottery", cascade="all, delete-orphan"
+    )
 
 
 class LotteryPrize(BaseAuditModel):
     __tablename__ = "lottery_prizes"
 
     id = Column(Integer, primary_key=True, index=True)
-    lottery_id = Column(Integer, ForeignKey("lotteries.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(Integer, ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
-    package_id = Column(Integer, ForeignKey("packages.id", ondelete="SET NULL"), nullable=True)
+    lottery_id = Column(
+        Integer,
+        ForeignKey("lotteries.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    product_id = Column(
+        Integer, ForeignKey("products.id", ondelete="SET NULL"), nullable=True
+    )
+    package_id = Column(
+        Integer, ForeignKey("packages.id", ondelete="SET NULL"), nullable=True
+    )
 
-    discount_type = Column(String, default="PERCENTAGE", nullable=False)  # PERCENTAGE, FIXED, FREE
+    discount_type = Column(
+        String, default="PERCENTAGE", nullable=False
+    )  # PERCENTAGE, FIXED, FREE
     discount_value = Column(Float, default=0.0, nullable=False)
-    probability = Column(Float, default=0.0, nullable=False)  # Weight / Probability e.g. 0.05
+    probability = Column(
+        Float, default=0.0, nullable=False
+    )  # Weight / Probability e.g. 0.05
     quantity = Column(Integer, default=0, nullable=False)  # Available inventory
 
     # Relationships
@@ -41,9 +58,18 @@ class LotteryEntry(BaseAuditModel):
     __tablename__ = "lottery_entries"
 
     id = Column(Integer, primary_key=True, index=True)
-    lottery_id = Column(Integer, ForeignKey("lotteries.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    lottery_prize_id = Column(Integer, ForeignKey("lottery_prizes.id", ondelete="SET NULL"), nullable=True)
+    lottery_id = Column(
+        Integer,
+        ForeignKey("lotteries.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    lottery_prize_id = Column(
+        Integer, ForeignKey("lottery_prizes.id", ondelete="SET NULL"), nullable=True
+    )
 
     # Relationships
     lottery = relationship("Lottery", back_populates="entries")

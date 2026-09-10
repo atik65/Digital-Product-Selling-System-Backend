@@ -15,7 +15,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from app.main import app
 
 
-def resolve_schema(schema: Dict[str, Any], components: Dict[str, Any]) -> Dict[str, Any]:
+def resolve_schema(
+    schema: Dict[str, Any], components: Dict[str, Any]
+) -> Dict[str, Any]:
     """Recursively resolve $ref pointers in OpenAPI schemas."""
     if "$ref" in schema:
         ref_path = schema["$ref"].replace("#/components/schemas/", "")
@@ -97,7 +99,11 @@ def generate_sample_from_schema(
 
     # Handle numbers/integers
     if schema_type in ("integer", "number"):
-        if "price" in field_name.lower() or "amount" in field_name.lower() or "balance" in field_name.lower():
+        if (
+            "price" in field_name.lower()
+            or "amount" in field_name.lower()
+            or "balance" in field_name.lower()
+        ):
             return 250.0 if schema_type == "number" else 250
         if "quantity" in field_name.lower() or "limit" in field_name.lower():
             return 1
@@ -117,25 +123,20 @@ def generate_sample_from_schema(
 CUSTOM_EXAMPLES = {
     "/api/v1/auth/admin/login": {
         "email": "admin@boostghor.com",
-        "password": "adminpassword123"
+        "password": "adminpassword123",
     },
     "/api/v1/auth/google": {
         "id_token": "google_oauth2_id_token_from_client",
-        "phone": "+8801712345678"
+        "phone": "+8801712345678",
     },
-    "/api/v1/auth/refresh": {
-        "refresh_token": "{{refresh_token}}"
-    },
-    "/api/v1/auth/me": {
-        "username": "customer_updated",
-        "phone": "+8801799887766"
-    },
+    "/api/v1/auth/refresh": {"refresh_token": "{{refresh_token}}"},
+    "/api/v1/auth/me": {"username": "customer_updated", "phone": "+8801799887766"},
     "/api/v1/admin/categories": {
         "name": "Game Credits & Top-Up",
         "slug": "game-credits",
         "icon": "https://example.com/icons/game.png",
         "sort_order": 1,
-        "is_active": True
+        "is_active": True,
     },
     "/api/v1/admin/products": {
         "category_id": 1,
@@ -143,7 +144,7 @@ CUSTOM_EXAMPLES = {
         "slug": "free-fire-diamond",
         "description": "Instant in-game Free Fire Diamond top-up via Player ID.",
         "image": "https://example.com/images/freefire.png",
-        "is_active": True
+        "is_active": True,
     },
     "/api/v1/admin/products/{product_id}/inputs": {
         "name": "player_id",
@@ -151,7 +152,7 @@ CUSTOM_EXAMPLES = {
         "type": "text",
         "placeholder": "Enter your 9-10 digit Player ID",
         "is_required": True,
-        "sort_order": 1
+        "sort_order": 1,
     },
     "/api/v1/admin/products/{product_id}/packages": {
         "name": "115 Diamonds",
@@ -159,13 +160,9 @@ CUSTOM_EXAMPLES = {
         "original_price": 95.0,
         "in_stock": True,
         "is_active": True,
-        "sort_order": 1
+        "sort_order": 1,
     },
-    "/api/v1/coupons/validate": {
-        "code": "SUMMER20",
-        "package_id": 1,
-        "quantity": 1
-    },
+    "/api/v1/coupons/validate": {"code": "SUMMER20", "package_id": 1, "quantity": 1},
     "/api/v1/admin/coupons": {
         "code": "SUMMER20",
         "type": "PERCENTAGE",
@@ -175,20 +172,18 @@ CUSTOM_EXAMPLES = {
         "usage_limit": 100,
         "per_user_limit": 1,
         "is_active": True,
-        "expires_at": "2026-12-31T23:59:59Z"
+        "expires_at": "2026-12-31T23:59:59Z",
     },
     "/api/v1/orders/checkout": {
         "package_id": 1,
         "quantity": 1,
-        "customer_inputs": {
-            "player_id": "1829384920"
-        },
+        "customer_inputs": {"player_id": "1829384920"},
         "coupon_code": "SUMMER20",
-        "use_wallet": False
+        "use_wallet": False,
     },
     "/api/v1/admin/orders/{order_id}/status": {
         "status": "COMPLETED",
-        "admin_notes": "Diamonds transferred successfully to UID 1829384920."
+        "admin_notes": "Diamonds transferred successfully to UID 1829384920.",
     },
     "/api/v1/admin/payment-methods": {
         "name": "bKash Personal",
@@ -197,26 +192,23 @@ CUSTOM_EXAMPLES = {
         "account_number": "01700112233",
         "instructions": "Send Money to this personal bKash number and enter TrxID below.",
         "qr_code_image": "https://example.com/qr/bkash.png",
-        "is_active": True
+        "is_active": True,
     },
-    "/api/v1/payments/initiate": {
-        "order_id": 1,
-        "payment_method_id": 1
-    },
+    "/api/v1/payments/initiate": {"order_id": 1, "payment_method_id": 1},
     "/api/v1/payments/verify-manual": {
         "payment_id": 1,
         "transaction_id": "TRX987654321",
-        "sender_phone": "+8801700112233"
+        "sender_phone": "+8801700112233",
     },
     "/api/v1/admin/payments/{payment_id}/verify": {
         "status": "COMPLETED",
-        "admin_notes": "Verified bKash statement."
+        "admin_notes": "Verified bKash statement.",
     },
     "/api/v1/wallet/topup": {
         "amount": 500.0,
         "payment_method_id": 1,
         "transaction_id": "TRX_TOPUP_8899",
-        "sender_phone": "+8801700112233"
+        "sender_phone": "+8801700112233",
     },
     "/api/v1/admin/wallet/topups/{topup_id}/approve": {
         "admin_notes": "Received 500 BDT via bKash."
@@ -231,13 +223,13 @@ CUSTOM_EXAMPLES = {
         "total_tickets": 100,
         "start_date": "2026-10-01T00:00:00Z",
         "end_date": "2026-10-07T23:59:59Z",
-        "is_active": True
+        "is_active": True,
     },
     "/api/v1/admin/lotteries/{lottery_id}/prizes": {
         "rank": 1,
         "prize_title": "Grand Prize: 5,000 Diamonds",
         "prize_type": "diamonds",
-        "prize_value": "5000"
+        "prize_value": "5000",
     },
     "/api/v1/admin/banners": {
         "image": "https://example.com/banners/summer_sale.png",
@@ -246,12 +238,12 @@ CUSTOM_EXAMPLES = {
         "button_text": "Shop Now",
         "button_url": "/category/game-credits",
         "is_active": True,
-        "sort_order": 1
+        "sort_order": 1,
     },
     "/api/v1/admin/popups": {
         "title": "Special Flash Promo!",
         "content": "Use coupon FLASH15 for instant 15% discount on all game credits today!",
-        "is_active": True
+        "is_active": True,
     },
     "/api/v1/admin/settings": {
         "site_name": "Digital Product Selling System",
@@ -259,11 +251,9 @@ CUSTOM_EXAMPLES = {
         "support_email": "support@boostghor.com",
         "telegram_url": "https://t.me/boostghorsupport",
         "whatsapp_url": "https://wa.me/8801999888777",
-        "notice_text": "Notice: bKash payment gateway maintenance on Sunday 2 AM - 4 AM."
+        "notice_text": "Notice: bKash payment gateway maintenance on Sunday 2 AM - 4 AM.",
     },
-    "/api/v1/admin/users/{user_id}/role": {
-        "role": "admin"
-    }
+    "/api/v1/admin/users/{user_id}/role": {"role": "admin"},
 }
 
 
@@ -275,9 +265,35 @@ def determine_role(path: str, summary: str, description: str) -> str:
         return "Public"
     if "/admin" in path:
         return "Admin"
-    if any(k in path for k in ("/auth/me", "/orders/checkout", "/orders/my-orders", "/wallet", "/participate", "/my-entries", "/coupons/validate", "/payments/initiate", "/payments/verify-manual")):
+    if any(
+        k in path
+        for k in (
+            "/auth/me",
+            "/orders/checkout",
+            "/orders/my-orders",
+            "/wallet",
+            "/participate",
+            "/my-entries",
+            "/coupons/validate",
+            "/payments/initiate",
+            "/payments/verify-manual",
+        )
+    ):
         return "Customer"
-    if any(k in path for k in ("/health", "/settings", "/banners", "/popups", "/categories", "/products", "/packages", "/payment-methods", "/lotteries/active")):
+    if any(
+        k in path
+        for k in (
+            "/health",
+            "/settings",
+            "/banners",
+            "/popups",
+            "/categories",
+            "/products",
+            "/packages",
+            "/payment-methods",
+            "/lotteries/active",
+        )
+    ):
         return "Public"
     return "Authenticated"
 
@@ -388,11 +404,13 @@ def build_postman_collection() -> Dict[str, Any]:
                 if part.startswith("{") and part.endswith("}"):
                     var_name = part[1:-1]
                     postman_path_parts.append(f":{var_name}")
-                    path_variables.append({
-                        "key": var_name,
-                        "value": "1",
-                        "description": f"Target ID for {var_name}",
-                    })
+                    path_variables.append(
+                        {
+                            "key": var_name,
+                            "value": "1",
+                            "description": f"Target ID for {var_name}",
+                        }
+                    )
                 else:
                     postman_path_parts.append(part)
 
@@ -400,12 +418,14 @@ def build_postman_collection() -> Dict[str, Any]:
             query_params: List[Dict[str, Any]] = []
             for param in operation.get("parameters", []):
                 if param.get("in") == "query":
-                    query_params.append({
-                        "key": param["name"],
-                        "value": str(param.get("schema", {}).get("default", "")),
-                        "description": param.get("description", ""),
-                        "disabled": not param.get("required", False),
-                    })
+                    query_params.append(
+                        {
+                            "key": param["name"],
+                            "value": str(param.get("schema", {}).get("default", "")),
+                            "description": param.get("description", ""),
+                            "disabled": not param.get("required", False),
+                        }
+                    )
 
             # Headers
             headers: List[Dict[str, str]] = []
@@ -484,52 +504,58 @@ def build_postman_collection() -> Dict[str, Any]:
             if query_params:
                 doc_lines.append("#### Query Parameters:")
                 for qp in query_params:
-                    doc_lines.append(f"- `{qp['key']}` ({'Required' if not qp['disabled'] else 'Optional'}): {qp['description']}")
+                    doc_lines.append(
+                        f"- `{qp['key']}` ({'Required' if not qp['disabled'] else 'Optional'}): {qp['description']}"
+                    )
                 doc_lines.append("")
 
             # Event / Test script
             events: List[Dict[str, Any]] = []
             if "/admin/login" in path:
-                events.append({
-                    "listen": "test",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "// Automatically save tokens to Collection Variables",
-                            "if (pm.response.code === 200) {",
-                            "    var jsonData = pm.response.json();",
-                            "    if (jsonData.data && jsonData.data.access_token) {",
-                            "        pm.collectionVariables.set('access_token', jsonData.data.access_token);",
-                            "        pm.collectionVariables.set('admin_token', jsonData.data.access_token);",
-                            "        console.log('✅ admin_token and access_token saved to Collection Variables');",
-                            "    }",
-                            "    if (jsonData.data && jsonData.data.refresh_token) {",
-                            "        pm.collectionVariables.set('refresh_token', jsonData.data.refresh_token);",
-                            "    }",
-                            "}",
-                        ],
-                    },
-                })
+                events.append(
+                    {
+                        "listen": "test",
+                        "script": {
+                            "type": "text/javascript",
+                            "exec": [
+                                "// Automatically save tokens to Collection Variables",
+                                "if (pm.response.code === 200) {",
+                                "    var jsonData = pm.response.json();",
+                                "    if (jsonData.data && jsonData.data.access_token) {",
+                                "        pm.collectionVariables.set('access_token', jsonData.data.access_token);",
+                                "        pm.collectionVariables.set('admin_token', jsonData.data.access_token);",
+                                "        console.log('✅ admin_token and access_token saved to Collection Variables');",
+                                "    }",
+                                "    if (jsonData.data && jsonData.data.refresh_token) {",
+                                "        pm.collectionVariables.set('refresh_token', jsonData.data.refresh_token);",
+                                "    }",
+                                "}",
+                            ],
+                        },
+                    }
+                )
             elif "/auth/google" in path:
-                events.append({
-                    "listen": "test",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "// Automatically save tokens to Collection Variables",
-                            "if (pm.response.code === 200 || pm.response.code === 201) {",
-                            "    var jsonData = pm.response.json();",
-                            "    if (jsonData.data && jsonData.data.access_token) {",
-                            "        pm.collectionVariables.set('access_token', jsonData.data.access_token);",
-                            "        console.log('✅ access_token saved to Collection Variables');",
-                            "    }",
-                            "    if (jsonData.data && jsonData.data.refresh_token) {",
-                            "        pm.collectionVariables.set('refresh_token', jsonData.data.refresh_token);",
-                            "    }",
-                            "}",
-                        ],
-                    },
-                })
+                events.append(
+                    {
+                        "listen": "test",
+                        "script": {
+                            "type": "text/javascript",
+                            "exec": [
+                                "// Automatically save tokens to Collection Variables",
+                                "if (pm.response.code === 200 || pm.response.code === 201) {",
+                                "    var jsonData = pm.response.json();",
+                                "    if (jsonData.data && jsonData.data.access_token) {",
+                                "        pm.collectionVariables.set('access_token', jsonData.data.access_token);",
+                                "        console.log('✅ access_token saved to Collection Variables');",
+                                "    }",
+                                "    if (jsonData.data && jsonData.data.refresh_token) {",
+                                "        pm.collectionVariables.set('refresh_token', jsonData.data.refresh_token);",
+                                "    }",
+                                "}",
+                            ],
+                        },
+                    }
+                )
 
             url_obj: Dict[str, Any] = {
                 "raw": "{{base_url}}/" + "/".join(postman_path_parts),
@@ -563,11 +589,13 @@ def build_postman_collection() -> Dict[str, Any]:
 
     # Convert sorted folders into collection items
     for folder_name in sorted(folders.keys()):
-        collection["item"].append({
-            "name": folder_name,
-            "item": folders[folder_name],
-            "description": f"Endpoints related to {folder_name}",
-        })
+        collection["item"].append(
+            {
+                "name": folder_name,
+                "item": folders[folder_name],
+                "description": f"Endpoints related to {folder_name}",
+            }
+        )
 
     return collection
 
@@ -577,7 +605,7 @@ if __name__ == "__main__":
     out_file = "Digital_Product_Selling_System.postman_collection.json"
     with open(out_file, "w", encoding="utf-8") as f:
         json.dump(collection_data, f, indent=2, ensure_ascii=False)
-    
+
     total_endpoints = sum(len(folder["item"]) for folder in collection_data["item"])
     print(f" Successfully generated Postman Collection: '{out_file}'")
     print(f" Total Folders: {len(collection_data['item'])}")

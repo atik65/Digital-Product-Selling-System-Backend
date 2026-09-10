@@ -4,7 +4,11 @@ from google.oauth2 import id_token as google_id_token
 from google.auth.transport import requests as google_requests
 
 from app.core.config import settings
-from app.core.exceptions import ValidationException, UnauthorizedException, ForbiddenException
+from app.core.exceptions import (
+    ValidationException,
+    UnauthorizedException,
+    ForbiddenException,
+)
 from app.core.security import (
     verify_password,
     create_access_token,
@@ -56,7 +60,15 @@ class AuthService:
             user = self.user_repo.get_by_email(db, email)
             if user:
                 # Link existing email account to google_id
-                self.user_repo.update(db, user, {"google_id": google_id, "image": image or user.image, "name": name or user.name})
+                self.user_repo.update(
+                    db,
+                    user,
+                    {
+                        "google_id": google_id,
+                        "image": image or user.image,
+                        "name": name or user.name,
+                    },
+                )
             else:
                 # Generate unique username from email
                 base_username = re.sub(r"[^a-zA-Z0-9]", "", email.split("@")[0]).lower()
@@ -132,4 +144,6 @@ class AuthService:
         return current_user
 
     def update_me(self, db: Session, current_user: User, data: UserUpdate) -> User:
-        return self.user_repo.update(db, current_user, data.model_dump(exclude_unset=True))
+        return self.user_repo.update(
+            db, current_user, data.model_dump(exclude_unset=True)
+        )

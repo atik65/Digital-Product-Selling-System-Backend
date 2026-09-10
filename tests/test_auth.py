@@ -102,9 +102,10 @@ def test_refresh_token_success(client, admin_user):
     )
     refresh_token = login_res.json()["data"]["refresh_token"]
 
-    response = client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token})
+    response = client.post(
+        "/api/v1/auth/refresh", json={"refresh_token": refresh_token}
+    )
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
     assert "access_token" in data["data"]
-

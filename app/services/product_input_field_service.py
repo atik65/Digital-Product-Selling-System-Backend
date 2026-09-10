@@ -19,12 +19,16 @@ class ProductInputFieldService:
             raise NotFoundException(f"Input field with id {field_id} not found")
         return field
 
-    def create_field(self, db: Session, product_id: int, data: InputFieldCreate) -> ProductInputField:
+    def create_field(
+        self, db: Session, product_id: int, data: InputFieldCreate
+    ) -> ProductInputField:
         f_dict = data.model_dump()
         f_dict["product_id"] = product_id
         return self.repo.create(db, f_dict)
 
-    def update_field(self, db: Session, field_id: int, data: InputFieldUpdate) -> ProductInputField:
+    def update_field(
+        self, db: Session, field_id: int, data: InputFieldUpdate
+    ) -> ProductInputField:
         field = self.get_by_id(db, field_id)
         return self.repo.update(db, field, data.model_dump(exclude_unset=True))
 

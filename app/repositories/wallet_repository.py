@@ -8,8 +8,12 @@ from app.core.exceptions import DatabaseException
 
 
 class WalletRepository:
-    def get_by_user_id(self, db: Session, user_id: int, for_update: bool = False) -> Optional[Wallet]:
-        query = db.query(Wallet).filter(Wallet.user_id == user_id, Wallet.is_deleted.is_(False))
+    def get_by_user_id(
+        self, db: Session, user_id: int, for_update: bool = False
+    ) -> Optional[Wallet]:
+        query = db.query(Wallet).filter(
+            Wallet.user_id == user_id, Wallet.is_deleted.is_(False)
+        )
         if for_update:
             query = query.with_for_update()
         return query.first()
@@ -23,7 +27,9 @@ class WalletRepository:
             return wallet
         except Exception as e:
             db.rollback()
-            raise DatabaseException(f"Failed to create wallet: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to create wallet: {str(e)}", original_exception=e
+            )
 
     def update_balance_with_transaction(
         self,
@@ -56,13 +62,27 @@ class WalletRepository:
             return wallet
         except Exception as e:
             db.rollback()
-            raise DatabaseException(f"Atomic wallet balance update failed: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Atomic wallet balance update failed: {str(e)}", original_exception=e
+            )
 
-    def get_transactions(self, db: Session, wallet_id: int, pagination: PaginationParams):
+    def get_transactions(
+        self, db: Session, wallet_id: int, pagination: PaginationParams
+    ):
         try:
-            query = db.query(WalletTransaction).filter(WalletTransaction.wallet_id == wallet_id, WalletTransaction.is_deleted.is_(False))
+            query = db.query(WalletTransaction).filter(
+                WalletTransaction.wallet_id == wallet_id,
+                WalletTransaction.is_deleted.is_(False),
+            )
             total = query.count()
-            items = query.order_by(WalletTransaction.id.desc()).offset(pagination.offset).limit(pagination.size).all()
+            items = (
+                query.order_by(WalletTransaction.id.desc())
+                .offset(pagination.offset)
+                .limit(pagination.size)
+                .all()
+            )
             return get_paginated_response(items, total, pagination)
         except Exception as e:
-            raise DatabaseException(f"Failed to fetch wallet transactions: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to fetch wallet transactions: {str(e)}", original_exception=e
+            )

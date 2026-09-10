@@ -9,7 +9,9 @@ URL_REGEX = re.compile(r"^https?://[^\s/$.?#].[^\s]*$")
 
 class DynamicInputService:
     @staticmethod
-    def validate_inputs(fields: List[ProductInputField], input_values: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_inputs(
+        fields: List[ProductInputField], input_values: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Validates client-submitted inputs against configured ProductInputFields.
         Returns sanitized input dictionary or raises ValidationException.
@@ -22,7 +24,9 @@ class DynamicInputService:
 
             # Check required
             if field.is_required:
-                if raw_val is None or (isinstance(raw_val, str) and not raw_val.strip()):
+                if raw_val is None or (
+                    isinstance(raw_val, str) and not raw_val.strip()
+                ):
                     raise ValidationException(f"Field '{field.label}' is required")
 
             if raw_val is not None:
@@ -31,17 +35,23 @@ class DynamicInputService:
                 # Validate specific types
                 if field.type == "email" and val_str:
                     if not EMAIL_REGEX.match(val_str):
-                        raise ValidationException(f"Field '{field.label}' must be a valid email address")
+                        raise ValidationException(
+                            f"Field '{field.label}' must be a valid email address"
+                        )
 
                 elif field.type == "number" and val_str:
                     try:
                         float(val_str)
                     except ValueError:
-                        raise ValidationException(f"Field '{field.label}' must be a valid numeric value")
+                        raise ValidationException(
+                            f"Field '{field.label}' must be a valid numeric value"
+                        )
 
                 elif field.type == "url" and val_str:
                     if not URL_REGEX.match(val_str):
-                        raise ValidationException(f"Field '{field.label}' must be a valid URL starting with http:// or https://")
+                        raise ValidationException(
+                            f"Field '{field.label}' must be a valid URL starting with http:// or https://"
+                        )
 
                 sanitized[field.name] = val_str
 

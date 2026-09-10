@@ -7,9 +7,21 @@ class OrderItem(BaseAuditModel):
     __tablename__ = "order_items"
 
     id = Column(Integer, primary_key=True, index=True)
-    order_id = Column(Integer, ForeignKey("orders.id", ondelete="CASCADE"), nullable=False, index=True)
-    product_id = Column(Integer, ForeignKey("products.id", ondelete="RESTRICT"), nullable=False, index=True)
-    package_id = Column(Integer, ForeignKey("packages.id", ondelete="RESTRICT"), nullable=False, index=True)
+    order_id = Column(
+        Integer, ForeignKey("orders.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    product_id = Column(
+        Integer,
+        ForeignKey("products.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    package_id = Column(
+        Integer,
+        ForeignKey("packages.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
 
     # Immutable Historical Snapshots
     product_name = Column(String, nullable=False)

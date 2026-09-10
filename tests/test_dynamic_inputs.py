@@ -6,9 +6,15 @@ from app.core.exceptions import ValidationException
 
 def test_dynamic_input_validation_success():
     fields = [
-        ProductInputField(name="email", label="Account Email", type="email", is_required=True),
-        ProductInputField(name="player_id", label="Player ID", type="number", is_required=True),
-        ProductInputField(name="profile", label="Profile Name", type="text", is_required=False),
+        ProductInputField(
+            name="email", label="Account Email", type="email", is_required=True
+        ),
+        ProductInputField(
+            name="player_id", label="Player ID", type="number", is_required=True
+        ),
+        ProductInputField(
+            name="profile", label="Profile Name", type="text", is_required=False
+        ),
     ]
     inputs = {
         "email": "customer@example.com",
@@ -23,7 +29,9 @@ def test_dynamic_input_validation_success():
 
 def test_dynamic_input_missing_required():
     fields = [
-        ProductInputField(name="email", label="Account Email", type="email", is_required=True),
+        ProductInputField(
+            name="email", label="Account Email", type="email", is_required=True
+        ),
     ]
     inputs = {}
     with pytest.raises(ValidationException) as exc_info:
@@ -33,7 +41,9 @@ def test_dynamic_input_missing_required():
 
 def test_dynamic_input_invalid_email():
     fields = [
-        ProductInputField(name="email", label="Account Email", type="email", is_required=True),
+        ProductInputField(
+            name="email", label="Account Email", type="email", is_required=True
+        ),
     ]
     inputs = {"email": "not-an-email"}
     with pytest.raises(ValidationException) as exc_info:
@@ -43,7 +53,9 @@ def test_dynamic_input_invalid_email():
 
 def test_dynamic_input_invalid_number():
     fields = [
-        ProductInputField(name="player_id", label="Player ID", type="number", is_required=True),
+        ProductInputField(
+            name="player_id", label="Player ID", type="number", is_required=True
+        ),
     ]
     inputs = {"player_id": "abc_not_a_number"}
     with pytest.raises(ValidationException) as exc_info:

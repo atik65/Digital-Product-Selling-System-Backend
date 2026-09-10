@@ -4,7 +4,11 @@ from app.repositories.order_repository import OrderRepository
 from app.models.wallet import Wallet
 from app.schemas.wallet import WalletAdjustRequest
 from app.schemas.pagination import PaginationParams
-from app.core.exceptions import NotFoundException, ValidationException, ForbiddenException
+from app.core.exceptions import (
+    NotFoundException,
+    ValidationException,
+    ForbiddenException,
+)
 
 
 class WalletService:
@@ -22,7 +26,9 @@ class WalletService:
         wallet = self.get_user_wallet(db, user_id)
         return self.wallet_repo.get_transactions(db, wallet.id, pagination)
 
-    def pay_order_with_wallet(self, db: Session, user_id: int, order_number: str) -> dict:
+    def pay_order_with_wallet(
+        self, db: Session, user_id: int, order_number: str
+    ) -> dict:
         """Atomically pays for an order using customer wallet balance."""
         order = self.order_repo.get_by_order_number(db, order_number)
         if not order:
@@ -60,14 +66,18 @@ class WalletService:
             "remaining_balance": wallet.balance,
         }
 
-    def admin_adjust_balance(self, db: Session, user_id: int, req: WalletAdjustRequest) -> Wallet:
+    def admin_adjust_balance(
+        self, db: Session, user_id: int, req: WalletAdjustRequest
+    ) -> Wallet:
         wallet = self.wallet_repo.get_by_user_id(db, user_id, for_update=True)
         if not wallet:
             wallet = self.wallet_repo.create_wallet(db, user_id)
 
         new_balance = wallet.balance + req.amount
         if new_balance < 0:
-            raise ValidationException(f"Adjustment cannot result in negative balance: {new_balance}")
+            raise ValidationException(
+                f"Adjustment cannot result in negative balance: {new_balance}"
+            )
 
         return self.wallet_repo.update_balance_with_transaction(
             db,

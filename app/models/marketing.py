@@ -25,7 +25,9 @@ class Popup(BaseAuditModel):
     image = Column(String, nullable=True)
     button_text = Column(String, nullable=True)
     button_url = Column(String, nullable=True)
-    display_type = Column(String, default="ON_FIRST_VISIT", nullable=False)  # ON_FIRST_VISIT, ONCE_PER_USER, AFTER_X_SECONDS
+    display_type = Column(
+        String, default="ON_FIRST_VISIT", nullable=False
+    )  # ON_FIRST_VISIT, ONCE_PER_USER, AFTER_X_SECONDS
     starts_at = Column(DateTime(timezone=True), nullable=True)
     ends_at = Column(DateTime(timezone=True), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)

@@ -17,7 +17,9 @@ class TopUpService:
 
     def submit_topup(self, db: Session, user_id: int, req: TopUpCreateRequest) -> TopUp:
         if req.amount <= 0:
-            raise ValidationException("Top-up amount must be strictly greater than zero")
+            raise ValidationException(
+                "Top-up amount must be strictly greater than zero"
+            )
 
         method = self.method_repo.get_by_id(db, req.payment_method_id)
         if not method or not method.is_active:
@@ -36,15 +38,21 @@ class TopUpService:
     def get_user_topups(self, db: Session, user_id: int) -> List[TopUp]:
         return self.topup_repo.get_user_topups(db, user_id)
 
-    def get_all_topups(self, db: Session, pagination: PaginationParams, status: str = None):
+    def get_all_topups(
+        self, db: Session, pagination: PaginationParams, status: str = None
+    ):
         return self.topup_repo.get_all(db, pagination, status)
 
-    def approve_topup(self, db: Session, topup_id: int, admin_id: int, req: TopUpReviewRequest) -> TopUp:
+    def approve_topup(
+        self, db: Session, topup_id: int, admin_id: int, req: TopUpReviewRequest
+    ) -> TopUp:
         topup = self.topup_repo.get_by_id(db, topup_id)
         if not topup:
             raise NotFoundException(f"Top-up with id {topup_id} not found")
         if topup.status != "PENDING":
-            raise ValidationException(f"Cannot approve top-up that is already in '{topup.status}' status")
+            raise ValidationException(
+                f"Cannot approve top-up that is already in '{topup.status}' status"
+            )
 
         # 1. Update top-up status to APPROVED
         updated_topup = self.topup_repo.update_status(
@@ -68,12 +76,16 @@ class TopUpService:
 
         return updated_topup
 
-    def reject_topup(self, db: Session, topup_id: int, admin_id: int, req: TopUpReviewRequest) -> TopUp:
+    def reject_topup(
+        self, db: Session, topup_id: int, admin_id: int, req: TopUpReviewRequest
+    ) -> TopUp:
         topup = self.topup_repo.get_by_id(db, topup_id)
         if not topup:
             raise NotFoundException(f"Top-up with id {topup_id} not found")
         if topup.status != "PENDING":
-            raise ValidationException(f"Cannot reject top-up that is already in '{topup.status}' status")
+            raise ValidationException(
+                f"Cannot reject top-up that is already in '{topup.status}' status"
+            )
 
         return self.topup_repo.update_status(
             db, topup, status="REJECTED", admin_id=admin_id, note=req.admin_note

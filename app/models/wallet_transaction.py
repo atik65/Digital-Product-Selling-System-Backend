@@ -7,7 +7,12 @@ class WalletTransaction(BaseAuditModel):
     __tablename__ = "wallet_transactions"
 
     id = Column(Integer, primary_key=True, index=True)
-    wallet_id = Column(Integer, ForeignKey("wallets.id", ondelete="CASCADE"), nullable=False, index=True)
+    wallet_id = Column(
+        Integer,
+        ForeignKey("wallets.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     type = Column(String, nullable=False)  # TOPUP, PURCHASE, REFUND, ADJUSTMENT, BONUS
     amount = Column(Float, nullable=False)
     balance_before = Column(Float, nullable=False)

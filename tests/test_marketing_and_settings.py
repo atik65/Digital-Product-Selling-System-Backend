@@ -60,7 +60,9 @@ def test_banners_and_popups(client, admin_auth_headers):
     assert upd_b.json()["data"]["title"] == "Monsoon Super Sale"
 
     # 4. Delete banner
-    del_b = client.delete(f"/api/v1/admin/banners/{banner_id}", headers=admin_auth_headers)
+    del_b = client.delete(
+        f"/api/v1/admin/banners/{banner_id}", headers=admin_auth_headers
+    )
     assert del_b.status_code == 200
 
     # 5. Create popup

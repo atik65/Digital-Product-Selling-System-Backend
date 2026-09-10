@@ -15,7 +15,9 @@ class SettingRepository:
             return setting
         except Exception as e:
             db.rollback()
-            raise DatabaseException(f"Failed to load site settings: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to load site settings: {str(e)}", original_exception=e
+            )
 
     def update(self, db: Session, setting: SiteSetting, data: dict) -> SiteSetting:
         try:
@@ -27,4 +29,6 @@ class SettingRepository:
             return setting
         except Exception as e:
             db.rollback()
-            raise DatabaseException(f"Failed to update site settings: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to update site settings: {str(e)}", original_exception=e
+            )

@@ -153,6 +153,8 @@ def test_cancel_pending_order(client, admin_auth_headers, auth_headers):
     order_number = order_res.json()["data"]["order_number"]
 
     # Customer cancels order
-    cancel_res = client.post(f"/api/v1/orders/{order_number}/cancel", headers=auth_headers)
+    cancel_res = client.post(
+        f"/api/v1/orders/{order_number}/cancel", headers=auth_headers
+    )
     assert cancel_res.status_code == 200
     assert cancel_res.json()["data"]["status"] == "CANCELLED"

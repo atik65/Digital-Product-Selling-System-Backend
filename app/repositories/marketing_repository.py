@@ -14,7 +14,11 @@ class MarketingRepository:
         return query.order_by(Banner.sort_order.asc(), Banner.id.desc()).all()
 
     def get_banner_by_id(self, db: Session, banner_id: int) -> Optional[Banner]:
-        return db.query(Banner).filter(Banner.id == banner_id, Banner.is_deleted.is_(False)).first()
+        return (
+            db.query(Banner)
+            .filter(Banner.id == banner_id, Banner.is_deleted.is_(False))
+            .first()
+        )
 
     def create_banner(self, db: Session, data: dict) -> Banner:
         banner = Banner(**data)
@@ -25,7 +29,9 @@ class MarketingRepository:
             return banner
         except Exception as e:
             db.rollback()
-            raise DatabaseException(f"Failed to create banner: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to create banner: {str(e)}", original_exception=e
+            )
 
     def update_banner(self, db: Session, banner: Banner, data: dict) -> Banner:
         try:
@@ -37,7 +43,9 @@ class MarketingRepository:
             return banner
         except Exception as e:
             db.rollback()
-            raise DatabaseException(f"Failed to update banner: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to update banner: {str(e)}", original_exception=e
+            )
 
     def delete_banner(self, db: Session, banner: Banner) -> None:
         try:
@@ -45,7 +53,9 @@ class MarketingRepository:
             db.commit()
         except Exception as e:
             db.rollback()
-            raise DatabaseException(f"Failed to delete banner: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to delete banner: {str(e)}", original_exception=e
+            )
 
     # Popups
     def get_active_popup(self, db: Session) -> Optional[Popup]:
@@ -63,10 +73,19 @@ class MarketingRepository:
         )
 
     def get_all_popups(self, db: Session) -> List[Popup]:
-        return db.query(Popup).filter(Popup.is_deleted.is_(False)).order_by(Popup.id.desc()).all()
+        return (
+            db.query(Popup)
+            .filter(Popup.is_deleted.is_(False))
+            .order_by(Popup.id.desc())
+            .all()
+        )
 
     def get_popup_by_id(self, db: Session, popup_id: int) -> Optional[Popup]:
-        return db.query(Popup).filter(Popup.id == popup_id, Popup.is_deleted.is_(False)).first()
+        return (
+            db.query(Popup)
+            .filter(Popup.id == popup_id, Popup.is_deleted.is_(False))
+            .first()
+        )
 
     def create_popup(self, db: Session, data: dict) -> Popup:
         popup = Popup(**data)
@@ -77,7 +96,9 @@ class MarketingRepository:
             return popup
         except Exception as e:
             db.rollback()
-            raise DatabaseException(f"Failed to create popup: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to create popup: {str(e)}", original_exception=e
+            )
 
     def update_popup(self, db: Session, popup: Popup, data: dict) -> Popup:
         try:
@@ -89,4 +110,6 @@ class MarketingRepository:
             return popup
         except Exception as e:
             db.rollback()
-            raise DatabaseException(f"Failed to update popup: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to update popup: {str(e)}", original_exception=e
+            )

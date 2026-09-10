@@ -16,7 +16,9 @@ class Settings(BaseSettings):
     DB_NAME: str
 
     # JWT Authentication
-    JWT_SECRET_KEY: str = "636e50556f3a4eeee570894c1890bc1fe28fb5d44cc52f7e43b91cf07c985296"
+    JWT_SECRET_KEY: str = (
+        "636e50556f3a4eeee570894c1890bc1fe28fb5d44cc52f7e43b91cf07c985296"
+    )
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7

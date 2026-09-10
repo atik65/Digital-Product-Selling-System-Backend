@@ -5,7 +5,11 @@ from app.repositories.coupon_repository import CouponRepository
 from app.repositories.order_repository import OrderRepository
 from app.models.coupon import Coupon
 from app.schemas.coupon import CouponCreate, CouponUpdate
-from app.core.exceptions import NotFoundException, ValidationException, ConflictException
+from app.core.exceptions import (
+    NotFoundException,
+    ValidationException,
+    ConflictException,
+)
 
 
 class CouponService:
@@ -13,7 +17,9 @@ class CouponService:
         self.repo = CouponRepository()
         self.order_repo = OrderRepository()
 
-    def get_coupons(self, db: Session, is_active: Optional[bool] = None) -> List[Coupon]:
+    def get_coupons(
+        self, db: Session, is_active: Optional[bool] = None
+    ) -> List[Coupon]:
         return self.repo.get_all(db, is_active=is_active)
 
     def get_by_id(self, db: Session, coupon_id: int) -> Coupon:
@@ -40,7 +46,9 @@ class CouponService:
             if u_dict["code"] != coupon.code:
                 existing = self.repo.get_by_code(db, u_dict["code"])
                 if existing:
-                    raise ConflictException(f"Coupon code '{u_dict['code']}' already exists")
+                    raise ConflictException(
+                        f"Coupon code '{u_dict['code']}' already exists"
+                    )
         return self.repo.update(db, coupon, u_dict)
 
     def delete_coupon(self, db: Session, coupon_id: int) -> None:
@@ -57,12 +65,20 @@ class CouponService:
 
         now = datetime.now(timezone.utc)
         if coupon.starts_at:
-            starts_at = coupon.starts_at if coupon.starts_at.tzinfo else coupon.starts_at.replace(tzinfo=timezone.utc)
+            starts_at = (
+                coupon.starts_at
+                if coupon.starts_at.tzinfo
+                else coupon.starts_at.replace(tzinfo=timezone.utc)
+            )
             if starts_at > now:
                 raise ValidationException("Coupon is not active yet")
 
         if coupon.expires_at:
-            expires_at = coupon.expires_at if coupon.expires_at.tzinfo else coupon.expires_at.replace(tzinfo=timezone.utc)
+            expires_at = (
+                coupon.expires_at
+                if coupon.expires_at.tzinfo
+                else coupon.expires_at.replace(tzinfo=timezone.utc)
+            )
             if expires_at < now:
                 raise ValidationException("Coupon has expired")
 
@@ -77,7 +93,9 @@ class CouponService:
         if user_id is not None:
             user_uses = self.order_repo.count_user_coupon_uses(db, user_id, coupon.id)
             if user_uses >= coupon.per_user_limit:
-                raise ValidationException("You have reached the maximum usage limit for this coupon")
+                raise ValidationException(
+                    "You have reached the maximum usage limit for this coupon"
+                )
 
         # Calculate discount
         if coupon.type == "PERCENTAGE":

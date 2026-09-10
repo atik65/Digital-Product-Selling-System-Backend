@@ -23,7 +23,9 @@ class OrderRepository:
             return order
         except Exception as e:
             db.rollback()
-            raise DatabaseException(f"Failed to create order: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to create order: {str(e)}", original_exception=e
+            )
 
     def get_by_id(self, db: Session, order_id: int) -> Optional[Order]:
         return (
@@ -41,31 +43,65 @@ class OrderRepository:
             .first()
         )
 
-    def get_user_orders(self, db: Session, user_id: int, pagination: PaginationParams, status: Optional[str] = None):
+    def get_user_orders(
+        self,
+        db: Session,
+        user_id: int,
+        pagination: PaginationParams,
+        status: Optional[str] = None,
+    ):
         try:
-            query = db.query(Order).options(joinedload(Order.items)).filter(Order.user_id == user_id, Order.is_deleted.is_(False))
+            query = (
+                db.query(Order)
+                .options(joinedload(Order.items))
+                .filter(Order.user_id == user_id, Order.is_deleted.is_(False))
+            )
             if status:
                 query = query.filter(Order.status == status)
 
             total = query.count()
-            items = query.order_by(Order.id.desc()).offset(pagination.offset).limit(pagination.size).all()
+            items = (
+                query.order_by(Order.id.desc())
+                .offset(pagination.offset)
+                .limit(pagination.size)
+                .all()
+            )
             return get_paginated_response(items, total, pagination)
         except Exception as e:
-            raise DatabaseException(f"Failed to fetch customer orders: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to fetch customer orders: {str(e)}", original_exception=e
+            )
 
-    def get_all_orders(self, db: Session, pagination: PaginationParams, status: Optional[str] = None, search: Optional[str] = None):
+    def get_all_orders(
+        self,
+        db: Session,
+        pagination: PaginationParams,
+        status: Optional[str] = None,
+        search: Optional[str] = None,
+    ):
         try:
-            query = db.query(Order).options(joinedload(Order.items), joinedload(Order.user)).filter(Order.is_deleted.is_(False))
+            query = (
+                db.query(Order)
+                .options(joinedload(Order.items), joinedload(Order.user))
+                .filter(Order.is_deleted.is_(False))
+            )
             if status:
                 query = query.filter(Order.status == status)
             if search:
                 query = query.filter(Order.order_number.ilike(f"%{search}%"))
 
             total = query.count()
-            items = query.order_by(Order.id.desc()).offset(pagination.offset).limit(pagination.size).all()
+            items = (
+                query.order_by(Order.id.desc())
+                .offset(pagination.offset)
+                .limit(pagination.size)
+                .all()
+            )
             return get_paginated_response(items, total, pagination)
         except Exception as e:
-            raise DatabaseException(f"Failed to fetch orders: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to fetch orders: {str(e)}", original_exception=e
+            )
 
     def update_status(self, db: Session, order: Order, new_status: str) -> Order:
         try:
@@ -75,7 +111,9 @@ class OrderRepository:
             return order
         except Exception as e:
             db.rollback()
-            raise DatabaseException(f"Failed to update order status: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to update order status: {str(e)}", original_exception=e
+            )
 
     def update_admin_note(self, db: Session, order: Order, note: str) -> Order:
         try:
@@ -85,7 +123,9 @@ class OrderRepository:
             return order
         except Exception as e:
             db.rollback()
-            raise DatabaseException(f"Failed to update order note: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to update order note: {str(e)}", original_exception=e
+            )
 
     def count_user_coupon_uses(self, db: Session, user_id: int, coupon_id: int) -> int:
         return (

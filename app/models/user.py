@@ -18,8 +18,22 @@ class User(BaseAuditModel):
     is_active = Column(Boolean, default=True, nullable=False)
 
     # Relationships
-    wallet = relationship("Wallet", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    wallet = relationship(
+        "Wallet", back_populates="user", uselist=False, cascade="all, delete-orphan"
+    )
     orders = relationship("Order", back_populates="user", cascade="all, delete-orphan")
-    topups = relationship("TopUp", foreign_keys="TopUp.user_id", back_populates="user", cascade="all, delete-orphan")
-    payments = relationship("Payment", foreign_keys="Payment.user_id", back_populates="user", cascade="all, delete-orphan")
-    lottery_entries = relationship("LotteryEntry", back_populates="user", cascade="all, delete-orphan")
+    topups = relationship(
+        "TopUp",
+        foreign_keys="TopUp.user_id",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    payments = relationship(
+        "Payment",
+        foreign_keys="Payment.user_id",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    lottery_entries = relationship(
+        "LotteryEntry", back_populates="user", cascade="all, delete-orphan"
+    )

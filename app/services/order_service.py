@@ -18,7 +18,11 @@ from app.schemas.order import (
 from app.schemas.pagination import PaginationParams
 from app.services.dynamic_input_service import DynamicInputService
 from app.services.coupon_service import CouponService
-from app.core.exceptions import NotFoundException, ValidationException, ForbiddenException
+from app.core.exceptions import (
+    NotFoundException,
+    ValidationException,
+    ForbiddenException,
+)
 
 
 class OrderService:
@@ -34,7 +38,9 @@ class OrderService:
         random_hex = secrets.token_hex(3).upper()
         return f"ORD-{date_str}-{random_hex}"
 
-    def preview_checkout(self, db: Session, req: CheckoutPreviewRequest, user_id: Optional[int] = None) -> CheckoutPreviewResponse:
+    def preview_checkout(
+        self, db: Session, req: CheckoutPreviewRequest, user_id: Optional[int] = None
+    ) -> CheckoutPreviewResponse:
         package = self.package_repo.get_by_id(db, req.package_id)
         if not package or not package.is_active:
             raise NotFoundException("Purchasable package not found or inactive")
@@ -48,7 +54,9 @@ class OrderService:
         input_valid = True
         if req.input_values:
             try:
-                DynamicInputService.validate_inputs(product.input_fields, req.input_values)
+                DynamicInputService.validate_inputs(
+                    product.input_fields, req.input_values
+                )
             except ValidationException as ve:
                 input_valid = False
                 validation_errors.append(str(ve))
@@ -82,7 +90,9 @@ class OrderService:
             validation_errors=validation_errors if validation_errors else None,
         )
 
-    def create_direct_order(self, db: Session, user_id: int, req: DirectOrderCreate) -> Order:
+    def create_direct_order(
+        self, db: Session, user_id: int, req: DirectOrderCreate
+    ) -> Order:
         package = self.package_repo.get_by_id(db, req.package_id)
         if not package or not package.is_active:
             raise NotFoundException("Purchasable package not found or inactive")
@@ -92,7 +102,9 @@ class OrderService:
             raise NotFoundException("Associated product is unavailable")
 
         # Strict validation of dynamic product inputs
-        sanitized_inputs = DynamicInputService.validate_inputs(product.input_fields, req.input_values)
+        sanitized_inputs = DynamicInputService.validate_inputs(
+            product.input_fields, req.input_values
+        )
 
         subtotal = round(package.price * req.quantity, 2)
         discount = 0.0
@@ -132,7 +144,9 @@ class OrderService:
 
         return self.order_repo.create_order(db, order_data, item_data)
 
-    def get_order_by_number(self, db: Session, order_number: str, user_id: Optional[int] = None) -> Order:
+    def get_order_by_number(
+        self, db: Session, order_number: str, user_id: Optional[int] = None
+    ) -> Order:
         order = self.order_repo.get_by_order_number(db, order_number)
         if not order:
             raise NotFoundException(f"Order '{order_number}' not found")
@@ -140,19 +154,35 @@ class OrderService:
             raise ForbiddenException("You do not have permission to view this order")
         return order
 
-    def get_user_orders(self, db: Session, user_id: int, pagination: PaginationParams, status: Optional[str] = None):
+    def get_user_orders(
+        self,
+        db: Session,
+        user_id: int,
+        pagination: PaginationParams,
+        status: Optional[str] = None,
+    ):
         return self.order_repo.get_user_orders(db, user_id, pagination, status)
 
-    def get_all_orders(self, db: Session, pagination: PaginationParams, status: Optional[str] = None, search: Optional[str] = None):
+    def get_all_orders(
+        self,
+        db: Session,
+        pagination: PaginationParams,
+        status: Optional[str] = None,
+        search: Optional[str] = None,
+    ):
         return self.order_repo.get_all_orders(db, pagination, status, search)
 
-    def update_order_status(self, db: Session, order_id: int, data: OrderStatusUpdate) -> Order:
+    def update_order_status(
+        self, db: Session, order_id: int, data: OrderStatusUpdate
+    ) -> Order:
         order = self.order_repo.get_by_id(db, order_id)
         if not order:
             raise NotFoundException(f"Order with id {order_id} not found")
         return self.order_repo.update_status(db, order, data.status)
 
-    def update_admin_note(self, db: Session, order_id: int, data: OrderNoteUpdate) -> Order:
+    def update_admin_note(
+        self, db: Session, order_id: int, data: OrderNoteUpdate
+    ) -> Order:
         order = self.order_repo.get_by_id(db, order_id)
         if not order:
             raise NotFoundException(f"Order with id {order_id} not found")

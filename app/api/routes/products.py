@@ -32,6 +32,7 @@ field_service = ProductInputFieldService()
 # 1. Public Product Catalog
 # ==========================================
 
+
 @router.get(
     "/products",
     response_model=StandardResponse[PaginatedData[ProductCardResponse]],
@@ -73,6 +74,7 @@ def get_product_details(slug: str, db: Session = Depends(get_db)):
 # ==========================================
 # 2. Dynamic Input Fields
 # ==========================================
+
 
 @router.get(
     "/products/{product_id}/fields",
@@ -155,6 +157,7 @@ def delete_product_input_field(
 # ==========================================
 # 3. Admin Product Management
 # ==========================================
+
 
 @router.get(
     "/admin/products",

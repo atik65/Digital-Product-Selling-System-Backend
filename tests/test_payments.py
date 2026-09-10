@@ -1,4 +1,6 @@
-def test_payment_submission_and_admin_verification(client, admin_auth_headers, auth_headers):
+def test_payment_submission_and_admin_verification(
+    client, admin_auth_headers, auth_headers
+):
     # 1. Product & Package
     p_res = client.post(
         "/api/v1/admin/products",

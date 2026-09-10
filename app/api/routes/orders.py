@@ -25,6 +25,7 @@ order_service = OrderService()
 # 1. Customer Checkout & Orders
 # ==========================================
 
+
 @router.post(
     "/checkout/preview",
     response_model=StandardResponse[CheckoutPreviewResponse],
@@ -77,7 +78,9 @@ def get_my_orders(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    orders = order_service.get_user_orders(db, current_user.id, pagination, status=status_filter)
+    orders = order_service.get_user_orders(
+        db, current_user.id, pagination, status=status_filter
+    )
     return {
         "success": True,
         "status_code": status.HTTP_200_OK,
@@ -132,6 +135,7 @@ def cancel_order(
 # 2. Admin Order Management
 # ==========================================
 
+
 @router.get(
     "/admin/orders",
     response_model=StandardResponse[PaginatedData[OrderResponse]],
@@ -145,7 +149,9 @@ def admin_list_orders(
     current_admin: User = Depends(require_role("admin")),
     db: Session = Depends(get_db),
 ):
-    orders = order_service.get_all_orders(db, pagination, status=status_filter, search=search)
+    orders = order_service.get_all_orders(
+        db, pagination, status=status_filter, search=search
+    )
     return {
         "success": True,
         "status_code": status.HTTP_200_OK,

@@ -43,7 +43,9 @@ class PopupBase(BaseModel):
     image: Optional[str] = None
     button_text: Optional[str] = None
     button_url: Optional[str] = None
-    display_type: str = "ON_FIRST_VISIT"  # ON_FIRST_VISIT, ONCE_PER_USER, AFTER_X_SECONDS
+    display_type: str = (
+        "ON_FIRST_VISIT"  # ON_FIRST_VISIT, ONCE_PER_USER, AFTER_X_SECONDS
+    )
     starts_at: Optional[datetime] = None
     ends_at: Optional[datetime] = None
     is_active: bool = True

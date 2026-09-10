@@ -31,16 +31,22 @@ class CategoryService:
             raise ConflictException(f"Category with slug '{data.slug}' already exists")
         return self.repo.create(db, data.model_dump())
 
-    def update_category(self, db: Session, category_id: int, data: CategoryUpdate) -> Category:
+    def update_category(
+        self, db: Session, category_id: int, data: CategoryUpdate
+    ) -> Category:
         category = self.get_by_id(db, category_id)
         update_dict = data.model_dump(exclude_unset=True)
         if "slug" in update_dict and update_dict["slug"] != category.slug:
             existing = self.repo.get_by_slug(db, update_dict["slug"])
             if existing:
-                raise ConflictException(f"Category with slug '{update_dict['slug']}' already exists")
+                raise ConflictException(
+                    f"Category with slug '{update_dict['slug']}' already exists"
+                )
         return self.repo.update(db, category, update_dict)
 
-    def reorder_category(self, db: Session, category_id: int, data: CategoryReorder) -> Category:
+    def reorder_category(
+        self, db: Session, category_id: int, data: CategoryReorder
+    ) -> Category:
         category = self.get_by_id(db, category_id)
         return self.repo.update(db, category, {"sort_order": data.sort_order})
 

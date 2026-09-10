@@ -18,9 +18,13 @@ class ProductRepository:
             return product
         except Exception as e:
             db.rollback()
-            raise DatabaseException(f"Failed to create product: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to create product: {str(e)}", original_exception=e
+            )
 
-    def get_products(self, db: Session, pagination: PaginationParams, filters: ProductFilters):
+    def get_products(
+        self, db: Session, pagination: PaginationParams, filters: ProductFilters
+    ):
         try:
             query = db.query(Product).filter(Product.is_deleted.is_(False))
 
@@ -31,11 +35,15 @@ class ProductRepository:
             if filters.category_id:
                 query = query.filter(Product.category_id == filters.category_id)
             if filters.category_slug:
-                query = query.join(Product.category).filter(Category.slug == filters.category_slug)
+                query = query.join(Product.category).filter(
+                    Category.slug == filters.category_slug
+                )
 
             total = query.count()
             items = (
-                query.options(joinedload(Product.category), joinedload(Product.packages))
+                query.options(
+                    joinedload(Product.category), joinedload(Product.packages)
+                )
                 .order_by(Product.sort_order.asc(), Product.id.desc())
                 .offset(pagination.offset)
                 .limit(pagination.size)
@@ -43,24 +51,38 @@ class ProductRepository:
             )
             return get_paginated_response(items, total, pagination)
         except Exception as e:
-            raise DatabaseException(f"Failed to fetch products: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to fetch products: {str(e)}", original_exception=e
+            )
 
-    def get_by_id(self, db: Session, product_id: int, include_deleted: bool = False) -> Optional[Product]:
-        query = db.query(Product).options(
-            joinedload(Product.category),
-            joinedload(Product.packages),
-            joinedload(Product.input_fields),
-        ).filter(Product.id == product_id)
+    def get_by_id(
+        self, db: Session, product_id: int, include_deleted: bool = False
+    ) -> Optional[Product]:
+        query = (
+            db.query(Product)
+            .options(
+                joinedload(Product.category),
+                joinedload(Product.packages),
+                joinedload(Product.input_fields),
+            )
+            .filter(Product.id == product_id)
+        )
         if not include_deleted:
             query = query.filter(Product.is_deleted.is_(False))
         return query.first()
 
-    def get_by_slug(self, db: Session, slug: str, include_deleted: bool = False) -> Optional[Product]:
-        query = db.query(Product).options(
-            joinedload(Product.category),
-            joinedload(Product.packages),
-            joinedload(Product.input_fields),
-        ).filter(Product.slug == slug)
+    def get_by_slug(
+        self, db: Session, slug: str, include_deleted: bool = False
+    ) -> Optional[Product]:
+        query = (
+            db.query(Product)
+            .options(
+                joinedload(Product.category),
+                joinedload(Product.packages),
+                joinedload(Product.input_fields),
+            )
+            .filter(Product.slug == slug)
+        )
         if not include_deleted:
             query = query.filter(Product.is_deleted.is_(False))
         return query.first()
@@ -75,7 +97,9 @@ class ProductRepository:
             return product
         except Exception as e:
             db.rollback()
-            raise DatabaseException(f"Failed to update product: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to update product: {str(e)}", original_exception=e
+            )
 
     def delete(self, db: Session, product_or_id) -> Optional[Product]:
         try:
@@ -91,7 +115,9 @@ class ProductRepository:
             return product
         except Exception as e:
             db.rollback()
-            raise DatabaseException(f"Failed to delete product: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to delete product: {str(e)}", original_exception=e
+            )
 
     def restore(self, db: Session, product_id: int) -> Optional[Product]:
         try:
@@ -104,4 +130,6 @@ class ProductRepository:
             return product
         except Exception as e:
             db.rollback()
-            raise DatabaseException(f"Failed to restore product: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to restore product: {str(e)}", original_exception=e
+            )

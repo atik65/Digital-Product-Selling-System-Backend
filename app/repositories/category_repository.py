@@ -12,13 +12,23 @@ class CategoryRepository:
                 query = query.filter(Category.is_active.is_(True))
             return query.order_by(Category.sort_order.asc(), Category.id.desc()).all()
         except Exception as e:
-            raise DatabaseException(f"Failed to fetch categories: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to fetch categories: {str(e)}", original_exception=e
+            )
 
     def get_by_id(self, db: Session, category_id: int) -> Optional[Category]:
-        return db.query(Category).filter(Category.id == category_id, Category.is_deleted.is_(False)).first()
+        return (
+            db.query(Category)
+            .filter(Category.id == category_id, Category.is_deleted.is_(False))
+            .first()
+        )
 
     def get_by_slug(self, db: Session, slug: str) -> Optional[Category]:
-        return db.query(Category).filter(Category.slug == slug, Category.is_deleted.is_(False)).first()
+        return (
+            db.query(Category)
+            .filter(Category.slug == slug, Category.is_deleted.is_(False))
+            .first()
+        )
 
     def create(self, db: Session, data: dict) -> Category:
         category = Category(**data)
@@ -29,7 +39,9 @@ class CategoryRepository:
             return category
         except Exception as e:
             db.rollback()
-            raise DatabaseException(f"Failed to create category: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to create category: {str(e)}", original_exception=e
+            )
 
     def update(self, db: Session, category: Category, data: dict) -> Category:
         try:
@@ -41,7 +53,9 @@ class CategoryRepository:
             return category
         except Exception as e:
             db.rollback()
-            raise DatabaseException(f"Failed to update category: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to update category: {str(e)}", original_exception=e
+            )
 
     def delete(self, db: Session, category: Category) -> None:
         try:
@@ -49,4 +63,6 @@ class CategoryRepository:
             db.commit()
         except Exception as e:
             db.rollback()
-            raise DatabaseException(f"Failed to delete category: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to delete category: {str(e)}", original_exception=e
+            )

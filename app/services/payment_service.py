@@ -3,9 +3,17 @@ from app.repositories.payment_repository import PaymentRepository
 from app.repositories.order_repository import OrderRepository
 from app.repositories.payment_method_repository import PaymentMethodRepository
 from app.models.payment import Payment
-from app.schemas.payment import PaymentSubmitRequest, PaymentVerifyRequest, PaymentRejectRequest
+from app.schemas.payment import (
+    PaymentSubmitRequest,
+    PaymentVerifyRequest,
+    PaymentRejectRequest,
+)
 from app.schemas.pagination import PaginationParams
-from app.core.exceptions import NotFoundException, ValidationException, ForbiddenException
+from app.core.exceptions import (
+    NotFoundException,
+    ValidationException,
+    ForbiddenException,
+)
 
 
 class PaymentService:
@@ -14,14 +22,20 @@ class PaymentService:
         self.order_repo = OrderRepository()
         self.method_repo = PaymentMethodRepository()
 
-    def submit_payment(self, db: Session, user_id: int, req: PaymentSubmitRequest) -> Payment:
+    def submit_payment(
+        self, db: Session, user_id: int, req: PaymentSubmitRequest
+    ) -> Payment:
         order = self.order_repo.get_by_id(db, req.order_id)
         if not order:
             raise NotFoundException(f"Order with id {req.order_id} not found")
         if order.user_id != user_id:
-            raise ForbiddenException("You cannot submit payment for an order that is not yours")
+            raise ForbiddenException(
+                "You cannot submit payment for an order that is not yours"
+            )
         if order.status not in ["PENDING", "PAYMENT_PENDING"]:
-            raise ValidationException(f"Order is already in '{order.status}' status and cannot accept payment")
+            raise ValidationException(
+                f"Order is already in '{order.status}' status and cannot accept payment"
+            )
 
         method = self.method_repo.get_by_id(db, req.payment_method_id)
         if not method or not method.is_active:
@@ -50,10 +64,14 @@ class PaymentService:
             raise NotFoundException("No payment found for this order")
         return payment
 
-    def get_all_payments(self, db: Session, pagination: PaginationParams, status: str = None):
+    def get_all_payments(
+        self, db: Session, pagination: PaginationParams, status: str = None
+    ):
         return self.payment_repo.get_all(db, pagination, status)
 
-    def verify_payment(self, db: Session, payment_id: int, admin_id: int, req: PaymentVerifyRequest) -> Payment:
+    def verify_payment(
+        self, db: Session, payment_id: int, admin_id: int, req: PaymentVerifyRequest
+    ) -> Payment:
         payment = self.payment_repo.get_by_id(db, payment_id)
         if not payment:
             raise NotFoundException(f"Payment with id {payment_id} not found")
@@ -70,7 +88,9 @@ class PaymentService:
 
         return updated_payment
 
-    def reject_payment(self, db: Session, payment_id: int, admin_id: int, req: PaymentRejectRequest) -> Payment:
+    def reject_payment(
+        self, db: Session, payment_id: int, admin_id: int, req: PaymentRejectRequest
+    ) -> Payment:
         payment = self.payment_repo.get_by_id(db, payment_id)
         if not payment:
             raise NotFoundException(f"Payment with id {payment_id} not found")

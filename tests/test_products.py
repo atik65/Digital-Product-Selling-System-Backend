@@ -8,7 +8,9 @@ def test_admin_create_product_success(client, admin_auth_headers):
         "is_active": True,
         "sort_order": 1,
     }
-    response = client.post("/api/v1/admin/products", json=payload, headers=admin_auth_headers)
+    response = client.post(
+        "/api/v1/admin/products", json=payload, headers=admin_auth_headers
+    )
     assert response.status_code == 201
 
     data = response.json()
@@ -49,7 +51,11 @@ def test_get_product_by_slug(client, admin_auth_headers):
     """Test retrieving product detail by slug with packages and input fields."""
     client.post(
         "/api/v1/admin/products",
-        json={"name": "Telegram Premium", "slug": "telegram-premium", "is_active": True},
+        json={
+            "name": "Telegram Premium",
+            "slug": "telegram-premium",
+            "is_active": True,
+        },
         headers=admin_auth_headers,
     )
 
@@ -79,7 +85,11 @@ def test_admin_update_product(client, admin_auth_headers):
     product_id = create_res.json()["data"]["id"]
 
     update_payload = {"name": "New App Name", "description": "Fresh description"}
-    response = client.put(f"/api/v1/admin/products/{product_id}", json=update_payload, headers=admin_auth_headers)
+    response = client.put(
+        f"/api/v1/admin/products/{product_id}",
+        json=update_payload,
+        headers=admin_auth_headers,
+    )
     assert response.status_code == 200
     assert response.json()["data"]["name"] == "New App Name"
 
@@ -111,10 +121,11 @@ def test_admin_delete_product(client, admin_auth_headers):
     )
     product_id = create_res.json()["data"]["id"]
 
-    delete_res = client.delete(f"/api/v1/admin/products/{product_id}", headers=admin_auth_headers)
+    delete_res = client.delete(
+        f"/api/v1/admin/products/{product_id}", headers=admin_auth_headers
+    )
     assert delete_res.status_code == 200
 
     # Verify not found in public query
     get_res = client.get("/api/v1/products/to-delete")
     assert get_res.status_code == 404
-

@@ -9,10 +9,16 @@ class PaymentMethodRepository:
         query = db.query(PaymentMethod).filter(PaymentMethod.is_deleted.is_(False))
         if active_only:
             query = query.filter(PaymentMethod.is_active.is_(True))
-        return query.order_by(PaymentMethod.sort_order.asc(), PaymentMethod.id.asc()).all()
+        return query.order_by(
+            PaymentMethod.sort_order.asc(), PaymentMethod.id.asc()
+        ).all()
 
     def get_by_id(self, db: Session, method_id: int) -> Optional[PaymentMethod]:
-        return db.query(PaymentMethod).filter(PaymentMethod.id == method_id, PaymentMethod.is_deleted.is_(False)).first()
+        return (
+            db.query(PaymentMethod)
+            .filter(PaymentMethod.id == method_id, PaymentMethod.is_deleted.is_(False))
+            .first()
+        )
 
     def create(self, db: Session, data: dict) -> PaymentMethod:
         method = PaymentMethod(**data)
@@ -23,7 +29,9 @@ class PaymentMethodRepository:
             return method
         except Exception as e:
             db.rollback()
-            raise DatabaseException(f"Failed to create payment method: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to create payment method: {str(e)}", original_exception=e
+            )
 
     def update(self, db: Session, method: PaymentMethod, data: dict) -> PaymentMethod:
         try:
@@ -35,7 +43,9 @@ class PaymentMethodRepository:
             return method
         except Exception as e:
             db.rollback()
-            raise DatabaseException(f"Failed to update payment method: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to update payment method: {str(e)}", original_exception=e
+            )
 
     def delete(self, db: Session, method: PaymentMethod) -> None:
         try:
@@ -43,4 +53,6 @@ class PaymentMethodRepository:
             db.commit()
         except Exception as e:
             db.rollback()
-            raise DatabaseException(f"Failed to delete payment method: {str(e)}", original_exception=e)
+            raise DatabaseException(
+                f"Failed to delete payment method: {str(e)}", original_exception=e
+            )

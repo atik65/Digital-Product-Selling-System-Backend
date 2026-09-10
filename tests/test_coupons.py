@@ -1,7 +1,9 @@
 from datetime import datetime, timezone, timedelta
 
 
-def test_coupon_validation_percentage_and_fixed(client, admin_auth_headers, auth_headers):
+def test_coupon_validation_percentage_and_fixed(
+    client, admin_auth_headers, auth_headers
+):
     # 1. Create a product and package for testing
     p_res = client.post(
         "/api/v1/admin/products",

@@ -38,4 +38,3 @@ def test_seed_catalog_creation_and_idempotence(db):
     # Test idempotence
     seed_catalog(db)
     assert db.query(Category).count() == len(categories)
-
