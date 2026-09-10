@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:16
+    container_name: digital-product-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: digital_product_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d digital_product_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: digital-product-api
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=digital_product_db
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-636e50556f3a4eeee570894c1890bc1fe28fb5d44cc52f7e43b91cf07c985296}
+      - PROJECT_NAME=${PROJECT_NAME:-Digital Product Selling System}
+      - VERSION=${VERSION:-0.1.0}
+      - DEBUG=${DEBUG:-False}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - media_data:/app/uploads
+
+volumes:
+  postgres_data:
+  media_data:
