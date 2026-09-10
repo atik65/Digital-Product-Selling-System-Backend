@@ -1,368 +1,565 @@
 # Digital Product Selling System
 
-A production-ready REST API for a Digital Product Selling System built with FastAPI, PostgreSQL, SQLAlchemy, Alembic, and Docker Compose. This system follows a clean, layered architecture separating routing, business logic, data access, and database models.
+<div align="center">
+
+[![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/Framework-FastAPI-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL_16-336791.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Package Manager](https://img.shields.io/badge/Tooling-Astral_uv-DE5FE9.svg?logo=astral&logoColor=white)](https://docs.astral.sh/uv/)
+[![Docker](https://img.shields.io/badge/Deployment-Docker_Compose-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
+[![Code Quality](https://img.shields.io/badge/Linter-Ruff_Clean-black.svg?logo=ruff&logoColor=white)](https://beta.ruff.rs/docs/)
+[![Tests](https://img.shields.io/badge/Tests-47%20Passed-brightgreen.svg?logo=pytest&logoColor=white)](https://pytest.org/)
+[![Postman Ready](https://img.shields.io/badge/Postman-v2.1_Collection-FF6C37.svg?logo=postman&logoColor=white)](#-postman-collection--api-testing)
+
+<p align="center">
+  <strong>An enterprise-grade, high-concurrency digital goods and in-game currency e-commerce platform backend.</strong>
+  <br />
+  Designed with strict Layered Service-Repository architecture, dynamic customer input validation, dual-mode settlement (Manual Gateway + Automated Webhooks + Customer Wallet), verifiable lottery engines, and end-to-end distributed tracing.
+</p>
+
+</div>
 
 ---
 
-## Architecture
+## 📑 Table of Contents
 
-This project is organized using a layered design pattern to ensure maintainability, testability, and separation of concerns:
-
-- **Routes (`app/api/routes`)**: Handle incoming HTTP requests, input validation via dependencies, and response formatting. They delegate all business logic to services.
-- **Services (`app/services`)**: Encapsulate the core business logic, orchestrate calls between different repositories, and enforce business rules.
-- **Repositories (`app/repositories`)**: Manage data persistence and abstract all SQLAlchemy database queries away from business logic.
-- **Models (`app/models`)**: Define database tables and relationships using SQLAlchemy Declarative Base.
-- **Schemas (`app/schemas`)**: Pydantic models for request body validation, query parameter parsing, and response serialization.
-- **Core (`app/core`)**: Central configuration, database session management, authentication utilities, custom middleware, and global exception handlers.
-
----
-
-### Key Features
-
-- 🏗️ **Clean Layered Architecture**: Strict separation of concerns (Routes → Services → Repositories → Models → Schemas).
-- 🐳 **Production-Grade Dockerization**: Ultra-fast multi-stage `Dockerfile` powered by `uv`, non-root security user, automated startup migrations, and full-stack `docker-compose.yml`.
-- 🔐 **JWT Authentication & RBAC**: Access & refresh tokens, password hashing with bcrypt, and flexible Role-Based Access Control (`require_role("admin")` or `require_role(["admin", "user"])`).
-- 🆔 **Distributed Tracing & Request-ID**: Automatic `X-Request-ID` generation/propagation across headers, logs, and error responses.
-- 📊 **Structured Logging**: Switch seamlessly between human-readable dev logs and single-line JSON logs (`LOG_FORMAT=json`) for Datadog/ELK/CloudWatch.
-- 🛡️ **BaseAuditModel & Soft Delete**: Auto-managed `created_at`, `updated_at`, `is_deleted`, and `deleted_at` with safe `soft_delete()` and `restore()` methods to maintain referential integrity.
-- 🌱 **Database Seeder (`make seed`)**: One-command population of Super Admin, regular user, and 8 sample products for instant out-of-the-box API testing.
-- 🗄️ **PostgreSQL 16 & Alembic**: Complete migration environment with autogenerate detection and persistent Docker storage.
-- ⏱️ **Rate Limiting**: Built-in request throttling powered by SlowAPI, preventing DDoS and brute-force attempts with standardized HTTP 429 errors.
-- 📁 **Media Upload & Static Serving**: Image uploads with MIME validation, served statically under `/media`.
-- 📦 **Standardized API Envelope**: Uniform JSON responses for success and error scenarios.
-- ⚡ **Ultra-Fast Tooling & DX**: Instant dependency resolution with Astral's `uv`, linting/formatting with Ruff, and cross-platform `Makefile`.
-- 🧪 **Comprehensive Automated Testing**: 26 unit tests covering auth, CRUD, seeding, soft deletes, and distributed tracing with isolated in-memory SQLite.
+- [System Overview](#-system-overview)
+- [Architecture & Design Principles](#-architecture--design-principles)
+- [System Architecture Diagram](#-system-architecture-diagram)
+- [Comprehensive Feature Matrix](#-comprehensive-feature-matrix)
+- [Tech Stack & Tooling](#-tech-stack--tooling)
+- [Project Directory Structure](#-project-directory-structure)
+- [Environment Configuration](#-environment-configuration)
+- [Getting Started](#-getting-started)
+  - [Quick Start with Make](#quick-start-with-make-recommended)
+  - [Manual Setup with UV](#manual-setup-with-uv)
+  - [Full Containerized Stack (Production Docker)](#full-containerized-stack-production-docker)
+- [Database Seeding & Test Accounts](#-database-seeding--test-accounts)
+- [Postman Collection & API Testing](#-postman-collection--api-testing)
+- [API Route Conventions & Endpoints](#-api-route-conventions--endpoints)
+- [Automated Testing & Code Quality](#-automated-testing--code-quality)
+- [Database Migrations (Alembic)](#-database-migrations-alembic)
+- [Production & Security Hardening](#-production--security-hardening)
+- [Makefile Reference](#-makefile-reference)
 
 ---
 
-## Prerequisites
+## 🚀 System Overview
 
-Before running this project, ensure you have the following installed:
+The **Digital Product Selling System** is an asynchronous, high-throughput backend engineered for digital product marketplaces (e.g., game top-ups like Free Fire / PUBG, streaming passes like Spotify / Netflix, software license keys, and digital gift cards).
 
-- Python 3.12 or newer
-- [uv](https://docs.astral.sh/uv/) (recommended package installer and resolver)
-- [Docker](https://www.docker.com/) and Docker Compose
-- `make` (optional, for running workflow shortcuts)
+### Key Business Capabilities
+- **Zero-Friction Customer Onboarding**: Native Google OAuth2 ID token verification paired with an admin credential authentication gateway.
+- **Dynamic Customer Input Engine**: Dynamic field requirements per product (e.g., Player ID, Zone ID, In-Game Name, Server Region) validated on checkout with runtime type & regex enforcement.
+- **Multi-Tiered Package Architecture**: Products support multiple package variants with independent pricing, original strike-through prices, and real-time inventory states.
+- **Discount & Coupon Engine**: Configurable percentage and fixed discounts enforcing minimum order thresholds, maximum discount caps, per-user usage limits, and expiration dates.
+- **Omnichannel Settlement**:
+  - **Manual Payment Gateways**: bKash, Nagad, and Rocket personal accounts with customer TrxID submission, duplicate TrxID prevention, and administrative verification queues.
+  - **Automated Webhooks**: Extensible signature verification infrastructure for automated payment aggregators.
+  - **Customer Wallet Ledger**: Pre-funded balance account with top-up approval pipelines and atomic checkout balance deductions.
+- **Gamified Lottery & Lucky Spin Engine**: Time-delimited campaigns with ticket allocations, entry tracking, multi-tier prize pools, and auditable randomized winner selection.
+- **Marketing & Content Management (CMS)**: Manage interactive hero carousel banners, promotional flash popup modals, and global site configurations without code deployments.
+- **Real-Time Administrative Dashboard**: Instant visibility into today's sales volume, order counters, pending approvals, and chronological activity feeds.
 
 ---
 
-## Project Structure
+## 🏛️ Architecture & Design Principles
+
+The codebase strictly adheres to **Clean Architecture** and **Domain-Driven Design (DDD)** principles, guaranteeing high cohesion, loose coupling, and maximum testability:
+
+```text
+HTTP Request
+    │
+    ▼
+┌────────────────────────────────────────────────────────┐
+│  FastAPI Routing & Middleware Layer                   │
+│  - Correlation ID Middleware (X-Request-ID)            │
+│  - Rate Limiter (SlowAPI / Leaky Bucket)               │
+│  - JWT Bearer Authentication & RBAC Dependencies      │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+                           ▼
+┌────────────────────────────────────────────────────────┐
+│  Application Service Layer (Business Logic)            │
+│  - Orchestrates business workflows & transaction scopes│
+│  - Executes domain validation (e.g., dynamic inputs)   │
+│  - Enforces atomic state transitions & financial rules │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+                           ▼
+┌────────────────────────────────────────────────────────┐
+│  Data Access & Repository Layer (Persistence)          │
+│  - Abstracts raw SQLAlchemy ORM queries                │
+│  - Enforces query encapsulation and pagination         │
+│  - Handles soft-delete scoping & audit tracking        │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+                           ▼
+┌────────────────────────────────────────────────────────┐
+│  PostgreSQL 16 Storage Layer                           │
+│  - Relational integrity, FK constraints, and indexes   │
+└────────────────────────────────────────────────────────┘
+```
+
+### Architectural Guardrails
+1. **Strict Dependency Flow**: Routes never execute raw database queries or direct ORM writes. All logic flows downwards: `Routes -> Services -> Repositories -> Models`.
+2. **DTO / Schema Encapsulation**: Strict Pydantic v2 validation models segregate external API payloads from internal database entities.
+3. **Auditability by Default**: Every critical database entity inherits from `BaseAuditModel`, providing auto-updating `created_at`, `updated_at`, `is_deleted`, and `deleted_at` timestamps with safe `soft_delete()` and `restore()` mechanics.
+4. **Idempotency & Concurrency Safety**: Wallet balances and financial transactions execute under explicit ACID transaction boundaries with rollback guarantees.
+5. **Observability**: Distributed correlation tokens (`X-Request-ID`) flow seamlessly through ASGI middleware, ContextVars, structured JSON formatters, and downstream error envelopes.
+
+---
+
+## 📊 System Architecture Diagram
+
+```mermaid
+graph TD
+    subgraph Clients
+        Web[Web Frontend / Next.js]
+        Mobile[Mobile Application]
+        Postman[Postman / Automated QA]
+    end
+
+    subgraph API Gateway & Core Layer
+        MW[Request-ID & Logging Middleware]
+        RL[SlowAPI Rate Limiter]
+        Auth[JWT / RBAC Security Guard]
+    end
+
+    subgraph Business Service Layer
+        AuthSvc[Auth & Google OAuth Service]
+        OrderSvc[Order & Dynamic Checkout Service]
+        PaySvc[Payment & Manual Verification Service]
+        WalletSvc[Wallet & Top-Up Ledger Service]
+        LotterySvc[Lottery & Prize Draw Engine]
+        CatalogSvc[Product, Category & Input Service]
+        MarketingSvc[Banners & CMS Service]
+    end
+
+    subgraph Persistence Layer
+        Repos[(Repository Layer)]
+        Audit[BaseAuditModel Soft-Delete Filter]
+    end
+
+    subgraph Storage & Infrastructure
+        Postgres[(PostgreSQL 16 Database)]
+        MediaStore[(Local / Docker Volume Media Storage)]
+    end
+
+    Clients --> MW
+    MW --> RL
+    RL --> Auth
+    Auth --> AuthSvc
+    Auth --> OrderSvc
+    Auth --> PaySvc
+    Auth --> WalletSvc
+    Auth --> LotterySvc
+    Auth --> CatalogSvc
+    Auth --> MarketingSvc
+
+    AuthSvc & OrderSvc & PaySvc & WalletSvc & LotterySvc & CatalogSvc & MarketingSvc --> Repos
+    Repos --> Audit
+    Audit --> Postgres
+    CatalogSvc & MarketingSvc --> MediaStore
+```
+
+---
+
+## 🧩 Comprehensive Feature Matrix
+
+| Domain Module | Key Capabilities | Access Level |
+| :--- | :--- | :--- |
+| **Authentication** | Native Google OAuth2 ID token exchange, Admin credential login, JWT refresh token rotation, current profile query (`GET /me`), customer profile patch. | Public / Customer / Admin |
+| **Admin - Users** | Paginated user accounts, administrative role promotion (`customer` ↔ `admin`), account status toggling, safe soft-deletion. | Admin |
+| **Categories** | Hierarchical categorization of digital goods with sort ordering, icon URL mapping, and active/inactive visibility toggles. | Public (Read) / Admin (CRUD) |
+| **Products & Inputs** | Digital product catalog with rich descriptions, image assets, category associations, and dynamic customer input fields (UID, Zone ID, Email). | Public (Read) / Admin (CRUD) |
+| **Packages** | Multi-tier variants per product (e.g. `115 Diamonds`, `Weekly Pass`), stock status, custom pricing, and sort order. | Public (Read) / Admin (CRUD) |
+| **Coupons** | Discount validation engine supporting `PERCENTAGE` (with maximum discount cap) and `FIXED` amount discounts, minimum spend thresholds, usage limits, and validity windows. | Customer (Validate) / Admin (CRUD) |
+| **Orders & Checkout**| Comprehensive checkout pipeline capturing dynamic inputs, coupon redemption, automated subtotal/discount calculations, and direct-gateway or wallet-funded orders. | Customer / Admin |
+| **Payment Methods** | Configurable payment channels (bKash, Nagad, Rocket, Bank Transfer) with custom instructions, account numbers, and dynamic QR images. | Public (Active) / Admin (All) |
+| **Payments** | Payment initiation, manual transaction ID submission, administrative payment verification queue, and automated webhook routing. | Customer / Admin / Webhook |
+| **Wallet & Top-Ups** | Stored customer balance ledger, top-up requests with manual TrxID submission, administrative approval/rejection pipeline, and automated balance credits. | Customer / Admin |
+| **Lottery & Spins** | Promotional lotteries, ticket purchasing with wallet/direct balance, participant rosters, multi-rank prize configurations, and automated randomized winner draws. | Public / Customer / Admin |
+| **Marketing CMS** | Dynamic homepage banners with CTA buttons, flash promotional popup modals, and active marketing asset management. | Public (Active) / Admin (CRUD) |
+| **Site Settings** | Centralized configuration for platform branding, support contact lines (Phone, Email, Telegram, WhatsApp), and live alert notices. | Public (Read) / Admin (Update) |
+| **Admin Dashboard** | Real-time KPI summaries: today's order count, today's sales volume, pending payments queue, pending top-up count, total users, and recent audit logs. | Admin |
+| **Media Storage** | Multi-part file upload engine with MIME verification, subfolder categorization, and static delivery via `/media`. | Authenticated / Admin |
+| **Health & Observability** | Zero-dependency health check probe (`/health`) reporting system status, database connection viability, versioning, and UTC timestamps. | Public / Docker / K8s |
+
+---
+
+## 🛠️ Tech Stack & Tooling
+
+- **Core Framework**: [FastAPI](https://fastapi.tiangolo.com/) (0.115+) - Modern, high-performance async Python framework.
+- **Language Runtime**: Python 3.12+ (leveraging modern union types and pattern matching).
+- **Relational Database**: [PostgreSQL 16](https://www.postgresql.org/) - Robust relational ACID store.
+- **ORM & Migrations**: [SQLAlchemy 2.0](https://www.sqlalchemy.org/) & [Alembic](https://alembic.sqlalchemy.org/) - Explicit SQL query generation with autogenerated migrations.
+- **Validation & Serialization**: [Pydantic v2](https://docs.pydantic.dev/) & Pydantic Settings.
+- **Package Management**: [Astral uv](https://docs.astral.sh/uv/) - 10-100x faster than traditional pip.
+- **Authentication & Cryptography**: PyJWT (HMAC-SHA256) & Passlib with BCrypt.
+- **Rate Limiting**: SlowAPI (in-memory or Redis-backed leaky bucket algorithms).
+- **Code Standards & QA**: [Ruff](https://beta.ruff.rs/) (linting and formatting) & [Pytest](https://pytest.org/) (47 integration tests).
+- **Containerization**: Multi-stage, non-root production `Dockerfile` & `docker-compose.yml`.
+
+---
+
+## 📁 Project Directory Structure
 
 ```text
 .
-|-- alembic/
-|   |-- versions/            # Database migration revisions
-|   `-- env.py               # Alembic runtime configuration
-|-- app/
-|   |-- api/
-|   |   `-- routes/          # API route definitions (auth, product, media, health)
-|   |-- core/
-|   |   |-- config.py        # Centralized settings and environment variables
-|   |   |-- database.py      # SQLAlchemy engine, session factory, and Base
-|   |   |-- exceptions.py    # Global exception handlers with request_id
-|   |   |-- limiter.py       # Rate limiter configuration
-|   |   |-- logging.py       # Request-ID ContextVar, filter, and JSON formatter
-|   |   |-- middleware.py    # Request-ID propagation and performance timing
-|   |   |-- security.py      # JWT authentication, bcrypt, and RBAC require_role
-|   |   `-- swagger.py       # OpenAPI and Swagger UI custom configuration
-|   |-- enums/               # Application-level enumerations
-|   |-- models/
-|   |   |-- base.py          # BaseAuditModel (timestamps, soft delete, restore)
-|   |   |-- product.py       # Product database model
-|   |   `-- user.py          # User database model
-|   |-- repositories/        # Database queries and persistence layer
-|   |-- schemas/             # Pydantic validation and serialization schemas
-|   |-- services/            # Core business logic layer
-|   `-- utils/               # Reusable utility functions (e.g. pagination)
-|-- scripts/
-|   `-- seed.py              # Idempotent database seeder (admin, user, products)
-|-- tests/                   # Automated test suite (in-memory SQLite, 26 tests)
-|   |-- conftest.py          # Pytest fixtures and mock client configuration
-|   |-- test_audit_and_soft_delete.py # Timestamps and soft-delete tests
-|   |-- test_auth.py         # Authentication and registration tests
-|   |-- test_health.py       # Health check tests
-|   |-- test_logging_and_tracing.py # Correlation ID and JSON logger tests
-|   |-- test_products.py     # Product CRUD and RBAC permission tests
-|   `-- test_seed.py         # Database seeding idempotency tests
-|-- uploads/                 # Local directory for uploaded media files
-|-- .dockerignore            # Files excluded from Docker builds
-|-- .env.example             # Example environment configuration
-|-- Dockerfile               # Multi-stage production-ready container build
-|-- docker-compose.yml       # Stack definition (App + PostgreSQL)
-|-- Makefile                 # Development task runner
-|-- pyproject.toml           # Project dependencies and tool configurations
-`-- README.md
+├── alembic/                         # Database migrations
+│   ├── versions/                    # Revision migration files
+│   └── env.py                       # Alembic environment and model metadata
+├── app/
+│   ├── api/
+│   │   └── routes/                  # API route handlers (v1)
+│   │       ├── admin/               # Admin specific sub-routers
+│   │       ├── auth.py              # Google OAuth & Admin login routes
+│   │       ├── categories.py        # Category CRUD endpoints
+│   │       ├── coupons.py           # Coupon validation & management
+│   │       ├── dashboard.py         # Admin analytical KPIs
+│   │       ├── health.py            # Infrastructure health probe
+│   │       ├── lottery.py           # Lottery ticket & draw routes
+│   │       ├── marketing.py         # Banners & flash popups
+│   │       ├── media.py             # File upload and asset management
+│   │       ├── orders.py            # Checkout and order tracking
+│   │       ├── packages.py          # Product package variants
+│   │       ├── payment_methods.py   # Gateway method configurations
+│   │       ├── payments.py          # Payment initiation & verification
+│   │       ├── products.py          # Products & dynamic custom fields
+│   │       ├── settings.py          # Site settings configuration
+│   │       ├── users.py             # Admin user administration
+│   │       └── wallet.py            # Wallet balances & top-ups
+│   ├── core/                        # Infrastructure core
+│   │   ├── config.py                # Pydantic environment configuration
+│   │   ├── database.py              # Engine, sessionmaker, and Base
+│   │   ├── exceptions.py            # Standardized exception handlers
+│   │   ├── limiter.py               # Rate limiter configuration
+│   │   ├── logging.py               # Correlation ID ContextVar & JSON logger
+│   │   ├── middleware.py            # X-Request-ID propagation & audit timing
+│   │   └── security.py              # JWT token generation & RBAC dependencies
+│   ├── enums/                       # Domain enumerations (OrderStatus, PaymentStatus, etc.)
+│   ├── models/                      # SQLAlchemy Declarative Models
+│   │   ├── base.py                  # BaseAuditModel (timestamps & soft-delete)
+│   │   ├── category.py              # Category entity
+│   │   ├── coupon.py                # Coupon entity
+│   │   ├── lottery.py               # Lottery, LotteryPrize & LotteryEntry
+│   │   ├── marketing.py             # Banner & Popup entities
+│   │   ├── order.py                 # Order & OrderItem entities
+│   │   ├── package.py               # Product package entity
+│   │   ├── payment.py               # Payment transaction entity
+│   │   ├── payment_method.py        # Payment gateway method entity
+│   │   ├── product.py               # Product entity
+│   │   ├── product_input_field.py   # Dynamic custom input configuration
+│   │   ├── setting.py               # Global site setting entity
+│   │   ├── topup.py                 # Wallet top-up request entity
+│   │   ├── user.py                  # User account entity
+│   │   └── wallet.py                # Customer wallet & transaction ledger
+│   ├── repositories/                # Persistence & DB query abstractions
+│   ├── schemas/                     # Pydantic DTOs for request/response validation
+│   ├── services/                    # Domain business logic & transactional workflows
+│   └── main.py                      # FastAPI application entrypoint & route registration
+├── scripts/
+│   ├── generate_postman_collection.py # Generator for Postman v2.1.0 JSON
+│   └── seed.py                      # Idempotent database seeder
+├── tests/                           # Complete integration test suite (47 tests)
+├── uploads/                         # Statically served media uploads
+├── Digital_Product_Selling_System.postman_collection.json # Ready-to-import Postman collection
+├── Dockerfile                       # Multi-stage production container build
+├── docker-compose.yml               # Local stack orchestration (Postgres + API)
+├── Makefile                         # Cross-platform developer automation tasks
+├── pyproject.toml                   # Project metadata, dependencies, and tooling configs
+└── README.md                        # Documentation
 ```
 
 ---
 
-## Getting Started
+## ⚙️ Environment Configuration
 
-### 1. Clone the repository
-
-```bash
-git clone <repository-url>
-cd fastapi-template
-```
-
-### 2. Configure environment variables
-
-Copy the example environment file and customize it if needed:
+Configuration is managed through environment variables or a local `.env` file via `app/core/config.py`:
 
 ```bash
 cp .env.example .env
 ```
 
-### 3. Quick Start with Make
-
-If you have `make` installed, you can run the entire initial setup in one command:
-
-```bash
-make setup
-make dev
-```
-
-The `make setup` command will install dependencies with `uv sync`, launch the PostgreSQL container, and apply all pending database migrations.
+| Variable | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `PROJECT_NAME` | string | `Digital Product Selling System` | Application display name |
+| `API_V1_STR` | string | `/api/v1` | URL prefix for all business API routes |
+| `DEBUG` | boolean | `false` | Enable verbose tracebacks (keep `false` in production) |
+| `DB_USER` | string | `postgres` | PostgreSQL username |
+| `DB_PASSWORD` | string | `password` | PostgreSQL password |
+| `DB_HOST` | string | `localhost` | PostgreSQL host (`db` inside Docker network) |
+| `DB_PORT` | integer | `5433` | PostgreSQL port (mapped to `5433` locally, `5432` internal) |
+| `DB_NAME` | string | `digital_product_db` | Target PostgreSQL database name |
+| `JWT_SECRET_KEY` | string | `change-this-in-production` | Secret key used for signing JWT tokens |
+| `JWT_ALGORITHM` | string | `HS256` | Cryptographic algorithm for JWT signature |
+| `ACCESS_TOKEN_EXPIRE_MINUTES`| integer | `60` | Lifespan of access tokens in minutes |
+| `REFRESH_TOKEN_EXPIRE_DAYS` | integer | `7` | Lifespan of refresh tokens in days |
+| `GOOGLE_CLIENT_ID` | string | `""` | Google Cloud Console OAuth 2.0 Client ID |
+| `LOG_LEVEL` | string | `INFO` | Logging threshold (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
+| `LOG_FORMAT` | string | `console` | `console` (human-readable) or `json` (production cloud format) |
 
 ---
 
-## Manual Setup (Without Make)
+## 🏁 Getting Started
+
+### Prerequisites
+- [Python 3.12+](https://www.python.org/downloads/)
+- [Astral uv](https://docs.astral.sh/uv/getting-started/installation/) (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
+- [Docker](https://docs.docker.com/get-docker/) & Docker Compose
+
+---
+
+### Quick Start with Make (Recommended)
+
+```bash
+# 1. Initialize project (installs dependencies, starts Postgres, applies migrations)
+make setup
+
+# 2. Seed initial data (Admin user, regular customer, sample categories, products, packages)
+make seed
+
+# 3. Start local development server with instant hot-reload
+make dev
+```
+The API is now live at **`http://localhost:8000`**!
+
+---
+
+### Manual Setup with UV
 
 If you prefer running commands directly without `make`:
 
-### 1. Install dependencies
-
 ```bash
+# 1. Install dependencies into isolated virtual environment
 uv sync
-```
 
-### 2. Start PostgreSQL container
-
-```bash
+# 2. Start PostgreSQL container
 docker compose up -d --wait db
-```
 
-### 3. Apply database migrations
-
-```bash
+# 3. Run database migrations to head
 uv run alembic upgrade head
+
+# 4. Populate seed data
+uv run python scripts/seed.py
+
+# 5. Launch FastAPI development server
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
-
-### 4. Start the development server
-
-```bash
-uv run uvicorn app.main:app --reload
-```
-
-The API will be available at `http://127.0.0.1:8000`.
 
 ---
 
-## Running with Full Docker (Production Mode)
+### Full Containerized Stack (Production Docker)
 
-If you or your team want to run the entire stack (FastAPI application + PostgreSQL database) fully containerized inside Docker without needing Python or `uv` installed on the host machine:
+Run the entire stack (FastAPI ASGI application + PostgreSQL 16) fully isolated in Docker:
 
-### 1. Start the entire application stack
 ```bash
+# Build and run the entire stack in background
 make docker-up
-```
-*(Or without Make: `docker compose up -d --build`)*
 
-This command automatically:
-1. Builds the lightweight, multi-stage FastAPI Docker image using `uv`.
-2. Starts the PostgreSQL container and waits until the health check passes.
-3. Automatically applies all pending Alembic database migrations (`alembic upgrade head`).
-4. Launches the FastAPI app via Uvicorn on `http://127.0.0.1:8000`.
-
-### 2. View live application logs
-```bash
+# Follow live container logs
 make docker-logs
-```
-*(Or without Make: `docker compose logs -f api`)*
 
-### 3. Stop the Docker stack
-```bash
+# Tear down the container stack
 make docker-down
 ```
-*(Or without Make: `docker compose down`)*
-
-> [!TIP]
-> **Workflow Best Practice:**
-> - **Local Development:** Run `make db-up` (only PostgreSQL in Docker) and `make dev` (FastAPI with instant hot-reload via `uv`).
-> - **Testing / Production Deployment:** Run `make docker-up` to ensure the application runs smoothly in an isolated, containerized environment.
 
 ---
 
-## Environment Variables
+## 🌱 Database Seeding & Test Accounts
 
-All settings are managed in `app/core/config.py` via Pydantic Settings and loaded from the `.env` file:
-
-| Variable | Default | Description |
-| :--- | :--- | :--- |
-| `DB_USER` | `postgres` | PostgreSQL username |
-| `DB_PASSWORD` | `password` | PostgreSQL password |
-| `DB_HOST` | `localhost` | Database host address |
-| `DB_PORT` | `5433` | Host port mapped to PostgreSQL in `docker-compose.yml` |
-| `DB_NAME` | `digital_product_db` | Database name |
-| `JWT_SECRET_KEY` | *(sample key)* | Secret key used to sign and verify JWT tokens |
-| `JWT_ALGORITHM` | `HS256` | Algorithm used for token signing |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | Access token lifespan in minutes |
-| `REFRESH_TOKEN_EXPIRE_DAYS` | `7` | Refresh token lifespan in days |
-| `LOG_LEVEL` | `INFO` | Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
-| `LOG_FORMAT` | `console` | Log format: `console` (human-readable dev logs) or `json` (production structured logs) |
-
----
-
-## Structured Logging & Request Tracing (Correlation ID)
-
-Every HTTP request is assigned a unique **`X-Request-ID`** (Correlation ID):
-- If the incoming client or API gateway sends an `X-Request-ID` header, the system retains and propagates it.
-- If not provided, a unique UUID4 is automatically generated.
-- The `X-Request-ID` is returned in all response headers and embedded in every error payload.
-- Every internal log message automatically includes the `[request_id]` for instant distributed tracing.
-
-### Switching Log Format
-In `.env` or production environment:
-```env
-LOG_FORMAT=json
-```
-Produces single-line structured JSON logs with HTTP metadata (`method`, `path`, `status_code`, `process_time`, `client_ip`) ready for tools like Datadog, ELK Stack, and Grafana Loki.
-
----
-
-## Makefile Commands
-
-The included `Makefile` works across PowerShell, Git Bash, macOS, and Linux:
-
-| Target | Description |
-| :--- | :--- |
-| `make help` | Show available targets and descriptions |
-| `make setup` | Install dependencies, start PostgreSQL, and apply migrations |
-| `make dev` | Start development server with hot-reload enabled |
-| `make db-up` | Start PostgreSQL container and run pending migrations |
-| `make db-down` | Stop PostgreSQL container |
-| `make db-reset` | Stop container, wipe data volume, recreate container, and reapply migrations |
-| `make seed` | Populate database with default admin, user, and 8 sample products |
-| `make docker-build` | Build Docker images for the application stack |
-| `make docker-up` | Start entire stack (DB + API) inside Docker |
-| `make docker-down` | Stop all running Docker containers |
-| `make docker-logs` | Follow logs from the Dockerized API container |
-| `make migration m="msg"` | Generate an autogenerated Alembic migration revision |
-| `make migrate` | Apply all pending migrations (`alembic upgrade head`) |
-| `make rollback` | Revert the most recent migration revision (`alembic downgrade -1`) |
-| `make migrate-status` | Display the current database revision |
-| `make lint` | Check code quality using Ruff linter |
-| `make format` | Auto-format codebase using Ruff formatter |
-| `make test` | Run test suite using Pytest |
-
----
-
-## Database Seeding
-
-To quickly populate the database with initial users and sample products for immediate testing:
+The project includes an **idempotent** seeder that populates complete demonstration data without creating duplicate records on repeated executions:
 
 ```bash
 make seed
 ```
 
-### Pre-configured Seed Accounts
-| Account | Email | Password | Role |
+### Pre-Configured Test Credentials
+
+| Role | Email | Password | Access Rights |
 | :--- | :--- | :--- | :--- |
-| **Super Admin** | `admin@example.com` | `admin123` | `admin` |
-| **Regular User** | `user@example.com` | `user123` | `user` |
-
-> [!NOTE]
-> The seeding script is **idempotent**. You can safely run `make seed` multiple times without generating duplicate record errors.
+| **Super Admin** | `admin@example.com` | `admin123` | Full access to `/api/v1/admin/*` endpoints and analytics dashboard |
+| **Customer** | `user@example.com` | `user123` | Access to customer checkout, personal orders, wallet, and lotteries |
 
 ---
 
-## API Documentation and Endpoints
+## 📮 Postman Collection & API Testing
 
-Once the application is running, visit the interactive API documentation:
+A complete, production-ready **Postman Collection v2.1.0** is included directly in the root of the repository:
 
-- Swagger UI: `http://127.0.0.1:8000/docs`
-- ReDoc: `http://127.0.0.1:8000/redoc`
+📄 **File**: [`Digital_Product_Selling_System.postman_collection.json`](file:///home/atik/Codes/python/fast%20api/digital%20product%20selling%20system/Digital_Product_Selling_System.postman_collection.json)
 
-### Default Endpoints
-
-- **Health**:
-  - `GET /health` - Service and database connectivity health check
-- **Authentication**:
-  - `POST /auth/register` - Register a new user account
-  - `POST /auth/login` - Authenticate user and receive access + refresh tokens
-  - `POST /auth/refresh` - Exchange a refresh token for a new access token
-  - `GET /auth/me` - Retrieve authenticated user profile
-- **Products (CRUD Reference)**:
-  - `GET /products` - List products with pagination, sorting, and search
-  - `POST /products` - Create a product
-  - `GET /products/{id}` - Get product details
-  - `PUT /products/{id}` - Update a product
-  - `DELETE /products/{id}` - Delete a product
-- **Media Upload**:
-  - `POST /media/upload` - Upload an image file (PNG, JPG, JPEG, WEBP)
-  - `GET /media/{filename}` - Serve uploaded static media
+### Collection Features:
+- **16 Feature-Specific Folders**: Covering all 88 individual endpoints.
+- **Automated JWT Token Management**: Calling `[Public (Admin Login)] Admin credential login` or `[Public] Google OAuth` automatically captures `access_token` and `admin_token` into collection variables.
+- **Pre-filled Realistic Payloads**: Every single POST and PUT request comes pre-configured with production-realistic JSON request bodies (real game top-up packages, dynamic UID payloads, coupon validation, bKash TrxID verification, etc.).
+- **Regeneration Support**: If endpoints or schemas evolve, regenerate the collection anytime:
+  ```bash
+  make postman
+  ```
 
 ---
 
-## Database Migrations Workflow
+## 🌐 API Route Conventions & Endpoints
 
-1. Modify or add models inside `app/models/`.
-2. Ensure new models are imported in `alembic/env.py` so Alembic can detect them.
-3. Generate a migration revision:
-   ```bash
-   make migration m="add new table"
-   # or: uv run alembic revision --autogenerate -m "add new table"
-   ```
-4. Review the generated script in `alembic/versions/`.
-5. Apply the migration:
-   ```bash
-   make migrate
-   # or: uv run alembic upgrade head
-   ```
+All business, customer, and administration routes are mounted strictly under the **`/api/v1/`** prefix.
+
+### Interactive API Explorers
+- **Swagger UI**: [`http://localhost:8000/docs`](http://localhost:8000/docs)
+- **ReDoc Documentation**: [`http://localhost:8000/redoc`](http://localhost:8000/redoc)
+- **OpenAPI 3.1 JSON Specification**: [`http://localhost:8000/openapi.json`](http://localhost:8000/openapi.json)
+
+### Core Endpoint Summary
+
+#### 1. Authentication & Profile
+- `POST /api/v1/auth/admin/login` - Admin credential authentication
+- `POST /api/v1/auth/google` - Customer Google OAuth2 ID token authentication
+- `POST /api/v1/auth/refresh` - Refresh expired access token
+- `GET /api/v1/auth/me` - Fetch authenticated user profile
+- `PATCH /api/v1/auth/me` - Update profile information
+
+#### 2. Catalog & Dynamic Input Fields
+- `GET /api/v1/categories` - List active public categories
+- `GET /api/v1/products` - List products (filterable by category, search term)
+- `GET /api/v1/products/{product_id}` - Detailed product specifications with required custom inputs
+- `GET /api/v1/products/{product_id}/packages` - List purchase options for a product
+- `POST /api/v1/admin/products/{product_id}/inputs` - Configure a dynamic field (e.g. `player_id`)
+
+#### 3. Checkout, Orders & Coupons
+- `POST /api/v1/coupons/validate` - Validate discount code against target package & quantity
+- `POST /api/v1/orders/checkout` - Create new order with customer inputs & optional wallet payment
+- `GET /api/v1/orders/my-orders` - Retrieve customer order history
+- `GET /api/v1/admin/orders` - Comprehensive order list for administration
+- `PUT /api/v1/admin/orders/{order_id}/status` - Update order fulfillment status (`COMPLETED`, `CANCELLED`)
+
+#### 4. Payments, Settlement & Wallets
+- `GET /api/v1/payment-methods` - Active payment gateways (bKash, Nagad, etc.)
+- `POST /api/v1/payments/initiate` - Initiate order payment settlement
+- `POST /api/v1/payments/verify-manual` - Submit customer manual payment transaction ID
+- `GET /api/v1/admin/payments/pending` - Review pending payment verification queue
+- `PUT /api/v1/admin/payments/{payment_id}/verify` - Approve/Reject manual payment transaction
+- `GET /api/v1/wallet` - View customer wallet balance
+- `POST /api/v1/wallet/topup` - Submit wallet balance top-up request
+- `PUT /api/v1/admin/wallet/topups/{topup_id}/approve` - Approve wallet top-up & credit balance
+
+#### 5. Lottery & Marketing
+- `GET /api/v1/lotteries/active` - List active public lotteries
+- `POST /api/v1/lotteries/{lottery_id}/participate` - Purchase lottery ticket
+- `POST /api/v1/admin/lotteries/{lottery_id}/draw` - Execute randomized winner draw
+- `GET /api/v1/banners` - Active hero carousel banners
+- `GET /api/v1/popups/active` - Active promotional popup modal
+- `GET /api/v1/settings` - Public site configuration
 
 ---
 
-## Extending the Template
+## 🧪 Automated Testing & Code Quality
 
-To add a new feature or resource (for example, `Order`), follow these steps:
-
-1. **Model (`app/models/order.py`)**: Create the SQLAlchemy model inheriting from `Base`.
-2. **Schemas (`app/schemas/order.py`)**: Create Pydantic schemas for request creation, update, and response serialization.
-3. **Repository (`app/repositories/order_repository.py`)**: Implement data access methods (queries, filters, commits) taking a SQLAlchemy `Session`.
-4. **Service (`app/services/order_service.py`)**: Implement business logic, validation rules, and coordinate repository calls.
-5. **Route (`app/api/routes/order.py`)**: Define API endpoints, inject `db` session, and call the service.
-6. **Register**: Import and mount the router in `app/main.py`:
-   ```python
-   from app.api.routes import order
-
-   app.include_router(order.router)
-   ```
-7. **Migrate**: Run `make migration m="create orders table"` and `make migrate`.
-
----
-
-## Code Quality and Testing
-
-### Linting and Formatting
-
-Code quality is enforced using Ruff:
+The project features a comprehensive automated test suite testing all 14 domain modules using isolated, in-memory SQLite transactions with zero side-effects on the development database.
 
 ```bash
-# Run linter
+# Run the complete test suite
+make test
+```
+
+### Test Suite Execution Output
+```text
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-9.1.0
+rootdir: /home/atik/Codes/python/fast api/digital product selling system
+collected 47 items                                                             
+
+tests/test_admin_dashboard.py .                                          [  2%]
+tests/test_audit_and_soft_delete.py ..                                   [  6%]
+tests/test_auth.py ........                                              [ 23%]
+tests/test_categories.py .                                               [ 25%]
+tests/test_coupons.py ..                                                 [ 29%]
+tests/test_dynamic_inputs.py ....                                        [ 38%]
+tests/test_health.py .                                                   [ 40%]
+tests/test_logging_and_tracing.py ....                                   [ 48%]
+tests/test_lottery.py .                                                  [ 51%]
+tests/test_marketing_and_settings.py ..                                  [ 55%]
+tests/test_orders_and_checkout.py ..                                     [ 59%]
+tests/test_packages.py .                                                 [ 61%]
+tests/test_payment_methods.py .                                          [ 63%]
+tests/test_payments.py ..                                                [ 68%]
+tests/test_products.py ........                                          [ 85%]
+tests/test_seed.py ..                                                    [ 89%]
+tests/test_topups.py ..                                                  [ 93%]
+tests/test_wallet.py ...                                                 [100%]
+
+============================= 47 passed in 15.75s ==============================
+```
+
+### Code Formatting & Linting
+Enforce enterprise clean-code standards with [Ruff](https://beta.ruff.rs/):
+
+```bash
+# Check code for linting errors
 make lint
 
 # Automatically format code
 make format
 ```
 
-### Automated Testing
+---
 
-Automated tests run using Pytest with an isolated, in-memory SQLite database (`sqlite:///:memory:`). Tests run in milliseconds and will not alter or delete your development PostgreSQL database:
+## 🗄️ Database Migrations (Alembic)
+
+Database schema evolution is managed through Alembic revisions:
 
 ```bash
-# Run the test suite
-make test
+# 1. Create a new autogenerated migration after modifying SQLAlchemy models
+make migration m="add_new_feature_table"
 
-# Run tests with verbose output
-uv run pytest -v
+# 2. Apply pending migrations to the database
+make migrate
+
+# 3. Rollback the most recent migration revision
+make rollback
+
+# 4. View current database revision
+make migrate-status
 ```
+
+---
+
+## 🛡️ Production & Security Hardening
+
+- **Non-Root Docker Execution**: The production Docker container executes under a dedicated `appuser` (UID 10001), preventing host root escalation.
+- **Distributed Request Tracing**: Every inbound request receives an `X-Request-ID` header, correlated across all logs, downstream services, and error payloads.
+- **Structured JSON Logging**: Switch between human-readable development logs and high-performance JSON logs (`LOG_FORMAT=json`) ready for ingestion into Datadog, ELK, or AWS CloudWatch.
+- **SlowAPI Rate Limiting**: Critical authentication endpoints (e.g. login, OAuth exchange) are shielded against brute-force attacks via configurable leaky-bucket limits (`10/minute`, `15/minute`).
+- **Safe Soft Deletion**: Records retain historic integrity and audit compliance via `is_deleted` and `deleted_at` attributes.
+
+---
+
+## 📋 Makefile Reference
+
+| Target | Description |
+| :--- | :--- |
+| `make help` | Display available Makefile targets and descriptions |
+| `make setup` | Install dependencies, boot PostgreSQL container, and apply migrations |
+| `make dev` | Start Uvicorn development server with instant hot-reload |
+| `make db-up` | Start PostgreSQL container and verify migrations |
+| `make db-down` | Stop PostgreSQL container without destroying data |
+| `make db-reset` | Tear down database volume and rerun all migrations from scratch |
+| `make seed` | Populate database with idempotent seed records (admin, user, products, etc.) |
+| `make docker-build`| Build multi-stage production Docker image |
+| `make docker-up` | Run full container stack (API + DB) in background |
+| `make docker-down` | Stop all stack containers |
+| `make docker-logs` | Stream live logs from the API container |
+| `make migration` | Create new migration revision (Usage: `make migration m="description"`) |
+| `make migrate` | Run all pending migrations (`alembic upgrade head`) |
+| `make rollback` | Revert the latest migration (`alembic downgrade -1`) |
+| `make migrate-status` | Display current database schema revision |
+| `make test` | Execute Pytest test suite (47 automated tests) |
+| `make lint` | Run Ruff linter across entire codebase |
+| `make format` | Automatically format all code using Ruff |
+| `make postman` | Regenerate the complete Postman Collection v2.1.0 JSON file |
+
+---
+
+<div align="center">
+  <sub>Engineered with precision for performance, security, and scalability.</sub>
+</div>
