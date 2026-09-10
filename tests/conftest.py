@@ -6,9 +6,10 @@ from sqlalchemy.pool import StaticPool
 
 from app.core.database import Base, get_db
 from app.core.security import create_access_token, hash_password
-from app.main import app
-from app.models.product import Product  # noqa: F401
+from app.main import app as fastapi_app
+import app.models  # noqa: F401 - registers all entities onto Base.metadata
 from app.models.user import User
+from app.models.wallet import Wallet
 
 # In-memory SQLite for super-fast, isolated testing with zero disk footprints
 TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -43,32 +44,37 @@ def client(db):
         finally:
             pass
 
-    app.dependency_overrides[get_db] = override_get_db
+    fastapi_app.dependency_overrides[get_db] = override_get_db
 
     # Disable rate limiter during tests to avoid accidental 429 errors
-    app.state.limiter.enabled = False
+    fastapi_app.state.limiter.enabled = False
 
-    with TestClient(app) as test_client:
+    with TestClient(fastapi_app) as test_client:
         yield test_client
 
     # Cleanup overrides and re-enable rate limiter
-    app.dependency_overrides.clear()
-    app.state.limiter.enabled = True
+    fastapi_app.dependency_overrides.clear()
+    fastapi_app.state.limiter.enabled = True
 
 
 @pytest.fixture(scope="function")
 def test_user(db) -> User:
-    """Fixture to create and return a regular test user."""
+    """Fixture to create and return a regular test customer with an initialized wallet."""
     user = User(
         email="testuser@example.com",
         username="testuser",
         hashed_password=hash_password("password123"),
-        role="user",
+        role="customer",
         is_active=True,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    wallet = Wallet(user_id=user.id, balance=1000.0)
+    db.add(wallet)
+    db.commit()
+
     return user
 
 

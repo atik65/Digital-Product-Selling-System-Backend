@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    # Google OAuth2
+    GOOGLE_CLIENT_ID: str = "Test"
+
     # Logging Configuration
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: str = (

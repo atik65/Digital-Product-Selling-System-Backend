@@ -1,22 +1,28 @@
+from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, EmailStr, ConfigDict
 
 
 class UserBase(BaseModel):
-    email: EmailStr = Field(description="User's email address")
-    username: str = Field(min_length=3, max_length=50, description="Unique username")
+    email: EmailStr
+    username: str
+    name: Optional[str] = None
+    image: Optional[str] = None
+    phone: Optional[str] = None
 
 
-class UserRegister(UserBase):
-    password: str = Field(
-        min_length=6, max_length=100, description="User password (min 6 characters)"
-    )
-    role: str = Field(default="user", description="User role (e.g. 'user' or 'admin')")
+class UserCreate(UserBase):
+    password: Optional[str] = None
 
 
-class UserLogin(BaseModel):
-    email_or_username: str = Field(description="Email address or username")
-    password: str = Field(description="User password")
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    image: Optional[str] = None
+
+
+class UserStatusUpdate(BaseModel):
+    is_active: bool
 
 
 class UserResponse(UserBase):
@@ -24,17 +30,26 @@ class UserResponse(UserBase):
     role: str
     is_active: bool
     created_at: datetime
-    updated_at: datetime | None = None
+    updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class GoogleLoginRequest(BaseModel):
+    id_token: str
+
+
+class AdminLoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
 
 
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
-    expires_in_minutes: int
-
-
-class RefreshTokenRequest(BaseModel):
-    refresh_token: str = Field(description="Valid refresh token")
+    user: UserResponse

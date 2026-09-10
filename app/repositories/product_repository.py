@@ -1,127 +1,107 @@
-from sqlalchemy.orm import Session
+from typing import Optional
+from sqlalchemy.orm import Session, joinedload
 from app.models.product import Product
-from app.schemas.product import ProductCreate, ProductUpdate, ProductFilters
+from app.models.category import Category
+from app.schemas.product import ProductFilters
 from app.schemas.pagination import PaginationParams
-from app.core.exceptions import DatabaseException
 from app.utils.pagination import get_paginated_response
-from app.enums.product import Specification
+from app.core.exceptions import DatabaseException
 
 
 class ProductRepository:
-    # product Create
-    def create(self, db: Session, product: ProductCreate):
-        db_product = Product(**product)
+    def create(self, db: Session, data: dict) -> Product:
+        product = Product(**data)
         try:
-            db.add(db_product)
+            db.add(product)
             db.commit()
-            db.refresh(db_product)
-            return db_product
+            db.refresh(product)
+            return product
         except Exception as e:
             db.rollback()
-            raise DatabaseException(
-                f"Database error during product creation: {str(e)}",
-                original_exception=e,
-            )
+            raise DatabaseException(f"Failed to create product: {str(e)}", original_exception=e)
 
-    # get all products
-    def get_products(
-        self, db: Session, pagination: PaginationParams, filters: ProductFilters
-    ):
+    def get_products(self, db: Session, pagination: PaginationParams, filters: ProductFilters):
         try:
-            # Exclude soft-deleted products by default
             query = db.query(Product).filter(Product.is_deleted.is_(False))
 
+            if filters.is_active is not None:
+                query = query.filter(Product.is_active == filters.is_active)
             if filters.name:
                 query = query.filter(Product.name.ilike(f"%{filters.name}%"))
-            if filters.min_price is not None:
-                query = query.filter(Product.price >= filters.min_price)
-            if filters.max_price is not None:
-                query = query.filter(Product.price <= filters.max_price)
-        except Exception as e:
-            raise DatabaseException(
-                f"Database error during product retrieval: {str(e)}",
-                original_exception=e,
+            if filters.category_id:
+                query = query.filter(Product.category_id == filters.category_id)
+            if filters.category_slug:
+                query = query.join(Product.category).filter(Category.slug == filters.category_slug)
+
+            total = query.count()
+            items = (
+                query.options(joinedload(Product.category), joinedload(Product.packages))
+                .order_by(Product.sort_order.asc(), Product.id.desc())
+                .offset(pagination.offset)
+                .limit(pagination.size)
+                .all()
             )
+            return get_paginated_response(items, total, pagination)
+        except Exception as e:
+            raise DatabaseException(f"Failed to fetch products: {str(e)}", original_exception=e)
 
-        total = query.count()
-        items = query.offset(pagination.offset).limit(pagination.size).all()
-
-        return get_paginated_response(items, total, pagination)
-
-    # get product details
-    def get_by_id(self, db: Session, product_id: int, include_deleted: bool = False):
-        query = db.query(Product).filter(Product.id == product_id)
+    def get_by_id(self, db: Session, product_id: int, include_deleted: bool = False) -> Optional[Product]:
+        query = db.query(Product).options(
+            joinedload(Product.category),
+            joinedload(Product.packages),
+            joinedload(Product.input_fields),
+        ).filter(Product.id == product_id)
         if not include_deleted:
             query = query.filter(Product.is_deleted.is_(False))
         return query.first()
 
-    # product Update
-    def update(self, db: Session, product_id: int, data: ProductUpdate):
-        product = self.get_by_id(db, product_id)
-        if product:
-            product_body = data.model_dump(exclude_unset=True)
-            for key, value in product_body.items():
-                setattr(product, key, value)
-            try:
-                db.commit()
-                db.refresh(product)
-            except Exception as e:
-                db.rollback()
-                raise DatabaseException(
-                    f"Database error during product update: {str(e)}",
-                    original_exception=e,
-                )
-        return product
+    def get_by_slug(self, db: Session, slug: str, include_deleted: bool = False) -> Optional[Product]:
+        query = db.query(Product).options(
+            joinedload(Product.category),
+            joinedload(Product.packages),
+            joinedload(Product.input_fields),
+        ).filter(Product.slug == slug)
+        if not include_deleted:
+            query = query.filter(Product.is_deleted.is_(False))
+        return query.first()
 
-    # get_products_by_spec
-    def get_products_by_spec(
-        self, db: Session, spec: Specification, pagination: PaginationParams
-    ):
+    def update(self, db: Session, product: Product, data: dict) -> Product:
         try:
-            query = db.query(Product).filter(
-                Product.price == spec, Product.is_deleted.is_(False)
-            )
+            for key, val in data.items():
+                if val is not None and hasattr(product, key):
+                    setattr(product, key, val)
+            db.commit()
+            db.refresh(product)
+            return product
         except Exception as e:
-            raise DatabaseException(
-                f"Database error during product retrieval: {str(e)}",
-                original_exception=e,
-            )
+            db.rollback()
+            raise DatabaseException(f"Failed to update product: {str(e)}", original_exception=e)
 
-        total = query.count()
-        items = query.offset(pagination.offset).limit(pagination.size).all()
+    def delete(self, db: Session, product_or_id) -> Optional[Product]:
+        try:
+            if isinstance(product_or_id, int):
+                product = self.get_by_id(db, product_or_id)
+            else:
+                product = product_or_id
+            if not product:
+                return None
+            product.soft_delete()
+            db.commit()
+            db.refresh(product)
+            return product
+        except Exception as e:
+            db.rollback()
+            raise DatabaseException(f"Failed to delete product: {str(e)}", original_exception=e)
 
-        return get_paginated_response(items, total, pagination)
-
-    # product Delete (Soft Delete by default)
-    def delete(self, db: Session, product_id: int, hard_delete: bool = False):
-        product = self.get_by_id(db, product_id)
-        if product:
-            try:
-                if hard_delete:
-                    db.delete(product)
-                else:
-                    product.soft_delete()
-                db.commit()
-            except Exception as e:
-                db.rollback()
-                raise DatabaseException(
-                    f"Database error during product deletion: {str(e)}",
-                    original_exception=e,
-                )
-        return product
-
-    # product Restore
-    def restore(self, db: Session, product_id: int):
-        product = self.get_by_id(db, product_id, include_deleted=True)
-        if product and product.is_deleted:
-            try:
-                product.restore()
-                db.commit()
-                db.refresh(product)
-            except Exception as e:
-                db.rollback()
-                raise DatabaseException(
-                    f"Database error during product restoration: {str(e)}",
-                    original_exception=e,
-                )
-        return product
+    def restore(self, db: Session, product_id: int) -> Optional[Product]:
+        try:
+            product = self.get_by_id(db, product_id, include_deleted=True)
+            if not product:
+                return None
+            product.restore()
+            db.commit()
+            db.refresh(product)
+            return product
+        except Exception as e:
+            db.rollback()
+            raise DatabaseException(f"Failed to restore product: {str(e)}", original_exception=e)

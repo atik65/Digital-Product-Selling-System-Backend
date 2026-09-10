@@ -1,53 +1,13 @@
-def test_register_user_success(client):
-    """Test registering a new user succeeds with 201 Created."""
+from unittest.mock import patch
+
+
+def test_admin_login_success(client, admin_user):
+    """Test logging in as admin with valid credentials returns JWT tokens."""
     payload = {
-        "email": "newuser@example.com",
-        "username": "newuser",
-        "password": "securepassword123",
-        "role": "user",
+        "email": admin_user.email,
+        "password": "adminpass123",
     }
-    response = client.post("/auth/register", json=payload)
-    assert response.status_code == 201
-
-    data = response.json()
-    assert data["success"] is True
-    assert data["data"]["email"] == payload["email"]
-    assert data["data"]["username"] == payload["username"]
-    assert "id" in data["data"]
-    assert "hashed_password" not in data["data"]
-
-
-def test_register_user_duplicate_email(client, test_user):
-    """Test registering with an existing email returns 409 Conflict."""
-    payload = {
-        "email": test_user.email,
-        "username": "uniqueusername",
-        "password": "password123",
-    }
-    response = client.post("/auth/register", json=payload)
-    assert response.status_code == 409
-    data = response.json()
-    assert data["success"] is False
-
-
-def test_register_user_validation_error(client):
-    """Test registering with a short password fails validation."""
-    payload = {
-        "email": "invalid@example.com",
-        "username": "invalid",
-        "password": "123",  # min_length is 6
-    }
-    response = client.post("/auth/register", json=payload)
-    assert response.status_code == 422
-
-
-def test_login_success(client, test_user):
-    """Test logging in with valid credentials returns JWT tokens."""
-    payload = {
-        "email_or_username": test_user.email,
-        "password": "password123",
-    }
-    response = client.post("/auth/login", json=payload)
+    response = client.post("/auth/admin/login", json=payload)
     assert response.status_code == 200
 
     data = response.json()
@@ -55,32 +15,59 @@ def test_login_success(client, test_user):
     assert "access_token" in data["data"]
     assert "refresh_token" in data["data"]
     assert data["data"]["token_type"] == "bearer"
+    assert data["data"]["user"]["role"] == "admin"
 
 
-def test_login_invalid_password(client, test_user):
-    """Test logging in with an incorrect password returns 401 Unauthorized."""
+def test_admin_login_invalid_password(client, admin_user):
+    """Test admin login with wrong password fails with 401."""
     payload = {
-        "email_or_username": test_user.email,
-        "password": "wrongpassword",
+        "email": admin_user.email,
+        "password": "wrongadminpass",
     }
-    response = client.post("/auth/login", json=payload)
+    response = client.post("/auth/admin/login", json=payload)
     assert response.status_code == 401
     assert response.json()["success"] is False
 
 
-def test_login_user_not_found(client):
-    """Test logging in with a non-existent user returns 401 Unauthorized."""
+def test_admin_login_non_admin_forbidden(client, test_user):
+    """Test customer user attempting admin login gets 403 Forbidden."""
     payload = {
-        "email_or_username": "nonexistent@example.com",
-        "password": "somepassword",
+        "email": test_user.email,
+        "password": "password123",
     }
-    response = client.post("/auth/login", json=payload)
-    assert response.status_code == 401
+    response = client.post("/auth/admin/login", json=payload)
+    assert response.status_code == 403
     assert response.json()["success"] is False
+
+
+@patch("app.services.auth_service.google_id_token.verify_oauth2_token")
+def test_google_login_new_user_and_existing(mock_verify, client):
+    """Test Google OAuth2 login creates new user and subsequent login finds existing."""
+    mock_verify.return_value = {
+        "sub": "google-uid-12345",
+        "email": "googler@example.com",
+        "name": "Google User",
+        "picture": "https://example.com/avatar.jpg",
+    }
+
+    # 1. First login creates user & wallet
+    payload = {"id_token": "fake-google-jwt-token"}
+    res1 = client.post("/auth/google", json=payload)
+    assert res1.status_code == 200
+    data1 = res1.json()["data"]
+    assert data1["user"]["email"] == "googler@example.com"
+    assert data1["user"]["role"] == "customer"
+    assert "access_token" in data1
+
+    # 2. Second login retrieves same user
+    res2 = client.post("/auth/google", json=payload)
+    assert res2.status_code == 200
+    data2 = res2.json()["data"]
+    assert data2["user"]["id"] == data1["user"]["id"]
 
 
 def test_get_current_user_profile_authenticated(client, auth_headers, test_user):
-    """Test GET /auth/me with valid Bearer token returns user profile."""
+    """Test GET /auth/me with valid Bearer token returns customer profile."""
     response = client.get("/auth/me", headers=auth_headers)
     assert response.status_code == 200
 
@@ -97,11 +84,21 @@ def test_get_current_user_profile_unauthorized(client):
     assert response.json()["success"] is False
 
 
-def test_refresh_token_success(client, test_user):
+def test_update_current_user_profile(client, auth_headers):
+    """Test PATCH /auth/me updates customer name and phone."""
+    payload = {"name": "Updated Customer Name", "phone": "+8801700000000"}
+    response = client.patch("/auth/me", headers=auth_headers, json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["data"]["name"] == "Updated Customer Name"
+    assert data["data"]["phone"] == "+8801700000000"
+
+
+def test_refresh_token_success(client, admin_user):
     """Test refreshing access token using a valid refresh token."""
     login_res = client.post(
-        "/auth/login",
-        json={"email_or_username": test_user.email, "password": "password123"},
+        "/auth/admin/login",
+        json={"email": admin_user.email, "password": "adminpass123"},
     )
     refresh_token = login_res.json()["data"]["refresh_token"]
 
@@ -110,3 +107,4 @@ def test_refresh_token_success(client, test_user):
     data = response.json()
     assert data["success"] is True
     assert "access_token" in data["data"]
+

@@ -1,93 +1,135 @@
+import re
 from sqlalchemy.orm import Session
-from app.repositories.user_repository import UserRepository
-from app.schemas.user import UserRegister, UserLogin
-from app.core.exceptions import (
-    ConflictException,
-    UnauthorizedException,
-    ForbiddenException,
-)
+from google.oauth2 import id_token as google_id_token
+from google.auth.transport import requests as google_requests
+
+from app.core.config import settings
+from app.core.exceptions import ValidationException, UnauthorizedException, ForbiddenException
 from app.core.security import (
-    hash_password,
     verify_password,
     create_access_token,
     create_refresh_token,
     decode_token,
 )
-from app.core.config import settings
+from app.models.user import User
+from app.repositories.user_repository import UserRepository
+from app.repositories.wallet_repository import WalletRepository
+from app.schemas.user import (
+    UserUpdate,
+    AdminLoginRequest,
+    GoogleLoginRequest,
+    RefreshTokenRequest,
+)
 
 
 class AuthService:
-    """Service handling user registration, authentication, and token management."""
-
     def __init__(self):
         self.user_repo = UserRepository()
+        self.wallet_repo = WalletRepository()
 
-    def register_user(self, db: Session, user_data: UserRegister):
-        # 1. Check for duplicate email
-        if self.user_repo.get_by_email(db, user_data.email):
-            raise ConflictException(
-                f"A user with email '{user_data.email}' already exists."
+    def _ensure_user_wallet(self, db: Session, user_id: int):
+        wallet = self.wallet_repo.get_by_user_id(db, user_id)
+        if not wallet:
+            self.wallet_repo.create_wallet(db, user_id)
+
+    def login_with_google(self, db: Session, req: GoogleLoginRequest) -> dict:
+        """Verifies Google ID Token, registers or syncs customer, and issues tokens."""
+        try:
+            # If GOOGLE_CLIENT_ID is configured, verify against it; otherwise verify signature
+            client_id = settings.GOOGLE_CLIENT_ID if settings.GOOGLE_CLIENT_ID else None
+            id_info = google_id_token.verify_oauth2_token(
+                req.id_token, google_requests.Request(), client_id
             )
+        except Exception as e:
+            raise UnauthorizedException(f"Invalid Google token: {str(e)}")
 
-        # 2. Check for duplicate username
-        if self.user_repo.get_by_username(db, user_data.username):
-            raise ConflictException(
-                f"Username '{user_data.username}' is already taken."
-            )
+        google_id = id_info.get("sub")
+        email = id_info.get("email")
+        name = id_info.get("name")
+        image = id_info.get("picture")
 
-        # 3. Hash the plain password using bcrypt
-        hashed = hash_password(user_data.password)
+        if not email:
+            raise ValidationException("Google account has no associated email address")
 
-        # 4. Prepare data dictionary for database insertion
-        user_dict = {
-            "email": user_data.email,
-            "username": user_data.username,
-            "hashed_password": hashed,
-            "role": user_data.role.lower(),
-            "is_active": True,
-        }
+        user = self.user_repo.get_by_google_id(db, google_id)
+        if not user:
+            user = self.user_repo.get_by_email(db, email)
+            if user:
+                # Link existing email account to google_id
+                self.user_repo.update(db, user, {"google_id": google_id, "image": image or user.image, "name": name or user.name})
+            else:
+                # Generate unique username from email
+                base_username = re.sub(r"[^a-zA-Z0-9]", "", email.split("@")[0]).lower()
+                username = base_username
+                counter = 1
+                while self.user_repo.get_by_username(db, username):
+                    username = f"{base_username}{counter}"
+                    counter += 1
 
-        return self.user_repo.create(db, user_dict)
+                user_data = {
+                    "google_id": google_id,
+                    "email": email,
+                    "username": username,
+                    "name": name,
+                    "image": image,
+                    "role": "customer",
+                    "is_active": True,
+                }
+                user = self.user_repo.create(db, user_data)
 
-    def authenticate_user(self, db: Session, login_data: UserLogin) -> dict:
-        # 1. Fetch user by email or username
-        user = self.user_repo.get_by_email_or_username(db, login_data.email_or_username)
-        if not user or not verify_password(login_data.password, user.hashed_password):
-            raise UnauthorizedException(
-                "Invalid credentials: incorrect username/email or password."
-            )
-
-        # 2. Check active status
         if not user.is_active:
-            raise ForbiddenException("Account is deactivated. Please contact support.")
+            raise ForbiddenException("Account has been suspended")
 
-        # 3. Generate dual JWT tokens
-        access_token = create_access_token(user_id=user.id, role=user.role)
-        refresh_token = create_refresh_token(user_id=user.id)
+        self._ensure_user_wallet(db, user.id)
+
+        access_token = create_access_token(user.id, user.role)
+        refresh_token = create_refresh_token(user.id)
 
         return {
             "access_token": access_token,
             "refresh_token": refresh_token,
             "token_type": "bearer",
-            "expires_in_minutes": settings.ACCESS_TOKEN_EXPIRE_MINUTES,
+            "user": user,
         }
 
-    def refresh_access_token(self, db: Session, refresh_token: str) -> dict:
-        # 1. Validate and decode the refresh token
-        payload = decode_token(refresh_token, expected_type="refresh")
-        user_id = int(payload.get("sub"))
+    def admin_login(self, db: Session, req: AdminLoginRequest) -> dict:
+        """Authenticates administrative staff via email and password."""
+        user = self.user_repo.get_by_email(db, req.email)
+        if not user or not user.hashed_password:
+            raise UnauthorizedException("Invalid email or password")
 
-        # 2. Fetch and check user status
-        user = self.user_repo.get_by_id(db, user_id)
-        if not user or not user.is_active:
-            raise UnauthorizedException("User no longer exists or is inactive.")
+        if not verify_password(req.password, user.hashed_password):
+            raise UnauthorizedException("Invalid email or password")
 
-        # 3. Issue a fresh access token
-        new_access_token = create_access_token(user_id=user.id, role=user.role)
+        if user.role != "admin":
+            raise ForbiddenException("Access restricted to administrators")
+
+        if not user.is_active:
+            raise ForbiddenException("Account has been suspended")
+
+        access_token = create_access_token(user.id, user.role)
+        refresh_token = create_refresh_token(user.id)
 
         return {
-            "access_token": new_access_token,
+            "access_token": access_token,
             "refresh_token": refresh_token,
             "token_type": "bearer",
-            "expires_in_minutes": settings.ACCESS_TOKEN_EXPIRE_MINUTES,
+            "user": user,
         }
+
+    def refresh_token(self, db: Session, req: RefreshTokenRequest) -> dict:
+        payload = decode_token(req.refresh_token, expected_type="refresh")
+        user_id = int(payload.get("sub"))
+        user = self.user_repo.get_by_id(db, user_id)
+        if not user or not user.is_active:
+            raise UnauthorizedException("User not found or inactive")
+
+        new_access_token = create_access_token(user.id, user.role)
+        return {"access_token": new_access_token, "token_type": "bearer"}
+
+    def get_me(self, db: Session, current_user: User) -> User:
+        self._ensure_user_wallet(db, current_user.id)
+        return current_user
+
+    def update_me(self, db: Session, current_user: User, data: UserUpdate) -> User:
+        return self.user_repo.update(db, current_user, data.model_dump(exclude_unset=True))

@@ -7,10 +7,11 @@ from app.core.security import get_current_user
 from app.models.user import User
 from app.schemas.response import StandardResponse
 from app.schemas.user import (
-    UserRegister,
-    UserLogin,
     UserResponse,
+    UserUpdate,
     TokenResponse,
+    GoogleLoginRequest,
+    AdminLoginRequest,
     RefreshTokenRequest,
 )
 from app.services.auth_service import AuthService
@@ -20,65 +21,68 @@ auth_service = AuthService()
 
 
 @router.post(
-    "/register",
-    response_model=StandardResponse[UserResponse],
-    status_code=status.HTTP_201_CREATED,
-    summary="Register a new user account",
+    "/google",
+    response_model=StandardResponse[TokenResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Login or register customer with Google OAuth2",
 )
-@limiter.limit("5/minute")
-def register(
+@limiter.limit("15/minute")
+def google_login(
     request: Request,
     response: Response,
-    user_data: UserRegister,
+    body: GoogleLoginRequest,
     db: Session = Depends(get_db),
 ):
-    created_user = auth_service.register_user(db, user_data)
+    result = auth_service.login_with_google(db, body)
     return {
         "success": True,
-        "status_code": status.HTTP_201_CREATED,
-        "message": "User registered successfully",
-        "data": created_user,
+        "status_code": status.HTTP_200_OK,
+        "message": "Google authentication successful",
+        "data": result,
     }
 
 
 @router.post(
-    "/login",
+    "/admin/login",
     response_model=StandardResponse[TokenResponse],
     status_code=status.HTTP_200_OK,
-    summary="Authenticate user and receive JWT access & refresh tokens",
+    summary="Admin credential login",
 )
 @limiter.limit("10/minute")
-def login(
+def admin_login(
     request: Request,
     response: Response,
-    credentials: UserLogin,
+    body: AdminLoginRequest,
     db: Session = Depends(get_db),
 ):
-    tokens = auth_service.authenticate_user(db, credentials)
+    result = auth_service.admin_login(db, body)
     return {
         "success": True,
         "status_code": status.HTTP_200_OK,
-        "message": "Login successful",
-        "data": tokens,
+        "message": "Admin authentication successful",
+        "data": result,
     }
 
 
 @router.post(
     "/refresh",
-    response_model=StandardResponse[TokenResponse],
+    response_model=StandardResponse[dict],
     status_code=status.HTTP_200_OK,
-    summary="Obtain a new access token using a valid refresh token",
+    summary="Refresh access token",
 )
+@limiter.limit("20/minute")
 def refresh_token(
-    payload: RefreshTokenRequest,
+    request: Request,
+    response: Response,
+    body: RefreshTokenRequest,
     db: Session = Depends(get_db),
 ):
-    new_tokens = auth_service.refresh_access_token(db, payload.refresh_token)
+    tokens = auth_service.refresh_token(db, body)
     return {
         "success": True,
         "status_code": status.HTTP_200_OK,
-        "message": "Access token refreshed successfully",
-        "data": new_tokens,
+        "message": "Token refreshed successfully",
+        "data": tokens,
     }
 
 
@@ -86,12 +90,36 @@ def refresh_token(
     "/me",
     response_model=StandardResponse[UserResponse],
     status_code=status.HTTP_200_OK,
-    summary="Get profile details of the currently authenticated user",
+    summary="Get current user profile",
 )
-def get_me(current_user: User = Depends(get_current_user)):
+def get_me(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    profile = auth_service.get_me(db, current_user)
     return {
         "success": True,
         "status_code": status.HTTP_200_OK,
-        "message": "Current user profile retrieved successfully",
-        "data": current_user,
+        "message": "Profile retrieved successfully",
+        "data": profile,
+    }
+
+
+@router.patch(
+    "/me",
+    response_model=StandardResponse[UserResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Update customer profile",
+)
+def update_me(
+    body: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    updated = auth_service.update_me(db, current_user, body)
+    return {
+        "success": True,
+        "status_code": status.HTTP_200_OK,
+        "message": "Profile updated successfully",
+        "data": updated,
     }

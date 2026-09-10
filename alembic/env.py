@@ -18,8 +18,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 from app.core.config import settings
 from app.core.database import Base
-from app.models.product import Product  # Import models for autogenerate detection
-from app.models.user import User
+import app.models  # noqa: F401 - registers all entities onto Base.metadata
 
 # Set dynamic database URL from .env settings
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)

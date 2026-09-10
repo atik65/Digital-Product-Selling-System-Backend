@@ -10,9 +10,8 @@ def test_product_audit_fields_and_soft_delete(db):
     # 1. Create product and check audit timestamps
     product_data = {
         "name": "Audit Test Monitor",
+        "slug": "audit-test-monitor",
         "description": "High refresh rate",
-        "price": 350.0,
-        "stock_quantity": 8,
     }
     product = repo.create(db, product_data)
 

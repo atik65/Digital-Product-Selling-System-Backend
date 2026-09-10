@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, DateTime, Boolean
+from sqlalchemy import Column, DateTime, Boolean, text
 from sqlalchemy.sql import func
 from app.core.database import Base
 
@@ -28,7 +28,7 @@ class BaseAuditModel(Base):
     is_deleted = Column(
         Boolean,
         default=False,
-        server_default=func.false(),
+        server_default=text("false"),
         nullable=False,
         index=True,
     )

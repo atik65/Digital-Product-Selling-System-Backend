@@ -1,34 +1,41 @@
+from app.models.category import Category
 from app.models.product import Product
 from app.models.user import User
-from scripts.seed import seed_products, seed_users
+from app.models.wallet import Wallet
+from scripts.seed import seed_users_and_wallets, seed_catalog
 
 
 def test_seed_users_creation_and_idempotence(db):
-    # 1. Run seed_users for the first time
-    seed_users(db)
+    seed_users_and_wallets(db)
 
     admin = db.query(User).filter(User.email == "admin@example.com").first()
     assert admin is not None
     assert admin.role == "admin"
     assert admin.username == "admin"
 
-    user = db.query(User).filter(User.email == "user@example.com").first()
-    assert user is not None
-    assert user.role == "user"
+    customer = db.query(User).filter(User.email == "user@example.com").first()
+    assert customer is not None
+    assert customer.role == "customer"
 
-    # 2. Run seed_users a second time to ensure idempotency (no duplicate errors)
-    seed_users(db)
-    total_admins = db.query(User).filter(User.email == "admin@example.com").count()
-    assert total_admins == 1
+    wallet = db.query(Wallet).filter(Wallet.user_id == customer.id).first()
+    assert wallet is not None
+    assert wallet.balance >= 1000.0
+
+    # Test idempotence
+    seed_users_and_wallets(db)
+    assert db.query(User).filter(User.email == "admin@example.com").count() == 1
 
 
-def test_seed_products_creation_and_idempotence(db):
-    # 1. Run seed_products for the first time
-    seed_products(db)
+def test_seed_catalog_creation_and_idempotence(db):
+    seed_catalog(db)
+
+    categories = db.query(Category).all()
+    assert len(categories) >= 3
 
     products = db.query(Product).all()
-    assert len(products) == 8
+    assert len(products) >= 3
 
-    # 2. Run seed_products a second time to ensure idempotency
-    seed_products(db)
-    assert db.query(Product).count() == 8
+    # Test idempotence
+    seed_catalog(db)
+    assert db.query(Category).count() == len(categories)
+
