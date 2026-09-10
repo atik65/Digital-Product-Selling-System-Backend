@@ -1,8 +1,10 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Header, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.database import get_db
+from app.core.exceptions import UnauthorizedException
 from app.core.security import get_current_user, require_role
 from app.models.user import User
 from app.schemas.response import StandardResponse
@@ -13,10 +15,19 @@ from app.schemas.payment import (
     PaymentVerifyRequest,
     PaymentRejectRequest,
 )
+from app.schemas.sms_webhook import (
+    SmsWebhookPayload,
+    SmsWebhookResponse,
+    IncomingSmsResponse,
+)
 from app.services.payment_service import PaymentService
+from app.services.sms_reconciliation_service import SmsReconciliationService
+from app.repositories.incoming_sms_repository import IncomingSmsRepository
 
 router = APIRouter(tags=["Payments"])
 service = PaymentService()
+sms_service = SmsReconciliationService()
+sms_repo = IncomingSmsRepository()
 
 
 @router.post(
@@ -120,3 +131,56 @@ def admin_reject_payment(
         "message": "Payment rejected.",
         "data": payment,
     }
+
+
+@router.post(
+    "/payments/webhook/sms",
+    response_model=StandardResponse[SmsWebhookResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Receive incoming SMS from Android listener for automatic payment verification",
+)
+def receive_sms_webhook(
+    body: SmsWebhookPayload,
+    x_device_secret: Optional[str] = Header(None, alias="X-Device-Secret"),
+    db: Session = Depends(get_db),
+):
+    if not x_device_secret or x_device_secret != settings.SMS_WEBHOOK_SECRET:
+        raise UnauthorizedException("Invalid or missing X-Device-Secret header")
+
+    result = sms_service.process_incoming_sms(db, body)
+    return {
+        "success": True,
+        "status_code": status.HTTP_200_OK,
+        "message": result.message,
+        "data": result,
+    }
+
+
+@router.get(
+    "/admin/payments/sms-logs",
+    response_model=StandardResponse[PaginatedData[IncomingSmsResponse]],
+    status_code=status.HTTP_200_OK,
+    summary="List all received SMS logs from forwarding devices",
+)
+def admin_list_sms_logs(
+    is_matched: Optional[bool] = None,
+    provider: Optional[str] = None,
+    search: Optional[str] = None,
+    pagination: PaginationParams = Depends(),
+    current_admin: User = Depends(require_role("admin")),
+    db: Session = Depends(get_db),
+):
+    logs = sms_repo.get_all(
+        db,
+        pagination,
+        is_matched=is_matched,
+        provider=provider,
+        search=search,
+    )
+    return {
+        "success": True,
+        "status_code": status.HTTP_200_OK,
+        "message": "SMS logs retrieved successfully",
+        "data": logs,
+    }
+

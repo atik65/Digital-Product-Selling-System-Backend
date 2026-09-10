@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     # Google OAuth2
     GOOGLE_CLIENT_ID: str = "Test"
 
+    # SMS Device Webhook Authentication
+    SMS_WEBHOOK_SECRET: str = "default-secure-sms-device-secret-key-change-in-prod"
+
     # Logging Configuration
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: str = (

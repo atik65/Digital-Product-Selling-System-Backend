@@ -15,6 +15,7 @@ from app.models.topup import TopUp
 from app.models.lottery import Lottery, LotteryPrize, LotteryEntry
 from app.models.marketing import Banner, Popup
 from app.models.setting import SiteSetting
+from app.models.incoming_sms import IncomingSms
 
 __all__ = [
     "BaseAuditModel",
@@ -37,4 +38,5 @@ __all__ = [
     "Banner",
     "Popup",
     "SiteSetting",
+    "IncomingSms",
 ]

@@ -200,6 +200,13 @@ CUSTOM_EXAMPLES = {
         "transaction_id": "TRX987654321",
         "sender_phone": "+8801700112233",
     },
+    "/api/v1/payments/webhook/sms": {
+        "sender": "bKash",
+        "message": "You have received Tk 500.00 from 01711223344. Fee Tk 0.00. Balance Tk 5,234.00. TrxID 9K48X78L9 at 11/09/2026 02:20",
+        "sim_slot": 1,
+        "device_id": "phone-galaxy-a12",
+        "timestamp": 1726000000,
+    },
     "/api/v1/admin/payments/{payment_id}/verify": {
         "status": "COMPLETED",
         "admin_notes": "Verified bKash statement.",
@@ -429,6 +436,12 @@ def build_postman_collection() -> Dict[str, Any]:
 
             # Headers
             headers: List[Dict[str, str]] = []
+            if "/payments/webhook/sms" in path:
+                headers.append({
+                    "key": "X-Device-Secret",
+                    "value": "default-secure-sms-device-secret-key-change-in-prod",
+                    "description": "Secret token configured on Android forwarding device",
+                })
 
             # Request Body
             request_body: Optional[Dict[str, Any]] = None

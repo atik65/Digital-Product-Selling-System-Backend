@@ -50,7 +50,28 @@ class PaymentService:
             "sender_number": req.sender_number.strip(),
             "status": "VERIFYING",
         }
-        return self.payment_repo.create(db, payment_data)
+        payment = self.payment_repo.create(db, payment_data)
+
+        # Check if SMS already arrived for this transaction
+        from app.services.sms_reconciliation_service import SmsReconciliationService
+        from datetime import datetime, timezone
+        sms_service = SmsReconciliationService()
+        matched_sms = sms_service.check_and_match_unclaimed(
+            db,
+            transaction_id=payment.transaction_id,
+            required_amount=payment.amount,
+            entity_type="ORDER_PAYMENT",
+            entity_id=payment.id,
+        )
+        if matched_sms:
+            payment.status = "VERIFIED"
+            payment.verified_at = datetime.now(timezone.utc)
+            payment.admin_note = f"Auto-verified instantly via SMS ({matched_sms.provider})"
+            self.order_repo.update_status(db, order, "PAID")
+            db.commit()
+            db.refresh(payment)
+
+        return payment
 
     def get_order_payment(self, db: Session, order_id: int, user_id: int) -> Payment:
         order = self.order_repo.get_by_id(db, order_id)

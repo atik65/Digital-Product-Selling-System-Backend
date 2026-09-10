@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "b1175dd5-4150-4e6d-9c54-31d3554daaa3",
+    "_postman_id": "23cb4eef-d3dc-4030-abba-365e0f27d7ff",
     "name": "Digital Product Selling System API",
     "description": "# Digital Product Selling System API Collection\n\nComplete API documentation and Postman workspace for the Digital Product Selling System (BoostGhor-like platform).\n\n### Features Included:\n- **Authentication**: Registration, Login, Custom Google OAuth, JWT Refresh, Password Reset\n- **Admin Management**: Dashboard Metrics, User Management, Role RBAC\n- **Catalog**: Categories, Products, Dynamic Customer Input Fields, Packages\n- **E-commerce**: Dynamic Checkout, Coupon Validation, Multi-order Tracking\n- **Payments**: Manual Gateway with TrxID Verification, bKash/Nagad Webhooks\n- **Wallet System**: Customer Balance, Top-Up Requests, Admin Approvals\n- **Lottery & Spins**: Ticket Purchases, Lucky Spin Draws, Prize Distribution\n- **Marketing & CMS**: Banners, Flash Popups, Public Site Settings, Media Uploads\n\n### Quick Setup:\n1. Run the server: `make dev` or `uv run uvicorn app.main:app --reload` (port 8000).\n2. Call `POST /api/v1/auth/admin/login` for Admin or `POST /api/v1/auth/google` for Customer.\n   The test script will **automatically store** `access_token` and `admin_token` into Postman variables!\n3. Subsequent authenticated endpoints automatically inherit the `{{access_token}}` variable.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -2421,6 +2421,70 @@
           "response": []
         },
         {
+          "name": "[Admin] List all received SMS logs from forwarding devices",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/payments/sms-logs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "payments",
+                "sms-logs"
+              ],
+              "query": [
+                {
+                  "key": "is_matched",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "provider",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "### List all received SMS logs from forwarding devices\n**Access Role Required**: `Admin`\n\n#### Query Parameters:\n- `is_matched` (Optional): \n- `provider` (Optional): \n- `search` (Optional): \n- `page` (Optional): \n- `size` (Optional): \n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "[Admin] Reject payment (reverts Order to PAYMENT_PENDING)",
           "request": {
             "method": "POST",
@@ -2603,6 +2667,57 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"order_id\": 1,\n  \"payment_method_id\": 1,\n  \"amount\": 250.0,\n  \"transaction_id\": \"sample_transaction_id\",\n  \"sender_number\": \"sample_sender_number\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Authenticated] Receive incoming SMS from Android listener for automatic payment verification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Device-Secret",
+                "value": "default-secure-sms-device-secret-key-change-in-prod",
+                "description": "Secret token configured on Android forwarding device"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/payments/webhook/sms",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "webhook",
+                "sms"
+              ]
+            },
+            "description": "### Receive incoming SMS from Android listener for automatic payment verification\n**Access Role Required**: `Authenticated`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sender\": \"bKash\",\n  \"message\": \"You have received Tk 500.00 from 01711223344. Fee Tk 0.00. Balance Tk 5,234.00. TrxID 9K48X78L9 at 11/09/2026 02:20\",\n  \"sim_slot\": 1,\n  \"device_id\": \"phone-galaxy-a12\",\n  \"timestamp\": 1726000000\n}",
               "options": {
                 "raw": {
                   "language": "json"
