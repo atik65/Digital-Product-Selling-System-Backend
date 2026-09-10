@@ -1,0 +1,3920 @@
+{
+  "info": {
+    "_postman_id": "b1175dd5-4150-4e6d-9c54-31d3554daaa3",
+    "name": "Digital Product Selling System API",
+    "description": "# Digital Product Selling System API Collection\n\nComplete API documentation and Postman workspace for the Digital Product Selling System (BoostGhor-like platform).\n\n### Features Included:\n- **Authentication**: Registration, Login, Custom Google OAuth, JWT Refresh, Password Reset\n- **Admin Management**: Dashboard Metrics, User Management, Role RBAC\n- **Catalog**: Categories, Products, Dynamic Customer Input Fields, Packages\n- **E-commerce**: Dynamic Checkout, Coupon Validation, Multi-order Tracking\n- **Payments**: Manual Gateway with TrxID Verification, bKash/Nagad Webhooks\n- **Wallet System**: Customer Balance, Top-Up Requests, Admin Approvals\n- **Lottery & Spins**: Ticket Purchases, Lucky Spin Draws, Prize Distribution\n- **Marketing & CMS**: Banners, Flash Popups, Public Site Settings, Media Uploads\n\n### Quick Setup:\n1. Run the server: `make dev` or `uv run uvicorn app.main:app --reload` (port 8000).\n2. Call `POST /api/v1/auth/admin/login` for Admin or `POST /api/v1/auth/google` for Customer.\n   The test script will **automatically store** `access_token` and `admin_token` into Postman variables!\n3. Subsequent authenticated endpoints automatically inherit the `{{access_token}}` variable.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string",
+      "description": "Base URL of the running API server"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string",
+      "description": "Bearer JWT Access Token (auto-updated upon login)"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string",
+      "description": "Bearer JWT Refresh Token"
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "type": "string",
+      "description": "Admin Bearer JWT Token for administrative operations"
+    }
+  ],
+  "item": [
+    {
+      "name": "01. Authentication & Profile",
+      "item": [
+        {
+          "name": "[Public (Admin Login)] Admin credential login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/admin/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "admin",
+                "login"
+              ]
+            },
+            "description": "### Admin credential login\n**Access Role Required**: `Public (Admin Login)`\n",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@boostghor.com\",\n  \"password\": \"adminpassword123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Automatically save tokens to Collection Variables",
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data && jsonData.data.access_token) {",
+                  "        pm.collectionVariables.set('access_token', jsonData.data.access_token);",
+                  "        pm.collectionVariables.set('admin_token', jsonData.data.access_token);",
+                  "        console.log('✅ admin_token and access_token saved to Collection Variables');",
+                  "    }",
+                  "    if (jsonData.data && jsonData.data.refresh_token) {",
+                  "        pm.collectionVariables.set('refresh_token', jsonData.data.refresh_token);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Public] Login or register customer with Google OAuth2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/google",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "google"
+              ]
+            },
+            "description": "### Login or register customer with Google OAuth2\n**Access Role Required**: `Public`\n",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_token\": \"google_oauth2_id_token_from_client\",\n  \"phone\": \"+8801712345678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Automatically save tokens to Collection Variables",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data && jsonData.data.access_token) {",
+                  "        pm.collectionVariables.set('access_token', jsonData.data.access_token);",
+                  "        console.log('✅ access_token saved to Collection Variables');",
+                  "    }",
+                  "    if (jsonData.data && jsonData.data.refresh_token) {",
+                  "        pm.collectionVariables.set('refresh_token', jsonData.data.refresh_token);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Customer] Get current user profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "### Get current user profile\n**Access Role Required**: `Customer`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Customer] Update customer profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "### Update customer profile\n**Access Role Required**: `Customer`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"customer_updated\",\n  \"phone\": \"+8801799887766\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Public] Refresh access token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/refresh",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "### Refresh access token\n**Access Role Required**: `Public`\n",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints related to 01. Authentication & Profile"
+    },
+    {
+      "name": "02. Admin - Dashboard",
+      "item": [
+        {
+          "name": "[Admin] Get recent orders and payments stream",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/dashboard/recent-activity",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "dashboard",
+                "recent-activity"
+              ]
+            },
+            "description": "### Get recent orders and payments stream\n**Access Role Required**: `Admin`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Get operational dashboard metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/dashboard/summary",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "dashboard",
+                "summary"
+              ]
+            },
+            "description": "### Get operational dashboard metrics\n**Access Role Required**: `Admin`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints related to 02. Admin - Dashboard"
+    },
+    {
+      "name": "03. Admin - User Management",
+      "item": [
+        {
+          "name": "[Admin] List all users with search and pagination",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "is_active",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "### List all users with search and pagination\n**Access Role Required**: `Admin`\n\n#### Query Parameters:\n- `search` (Optional): \n- `is_active` (Optional): \n- `page` (Optional): \n- `size` (Optional): \n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Get user details by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/users/:user_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "users",
+                ":user_id"
+              ],
+              "variable": [
+                {
+                  "key": "user_id",
+                  "value": "1",
+                  "description": "Target ID for user_id"
+                }
+              ]
+            },
+            "description": "### Get user details by ID\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `user_id`: Target ID for user_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Activate or suspend user account",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/users/:user_id/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "users",
+                ":user_id",
+                "status"
+              ],
+              "variable": [
+                {
+                  "key": "user_id",
+                  "value": "1",
+                  "description": "Target ID for user_id"
+                }
+              ]
+            },
+            "description": "### Activate or suspend user account\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `user_id`: Target ID for user_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints related to 03. Admin - User Management"
+    },
+    {
+      "name": "04. Categories",
+      "item": [
+        {
+          "name": "[Admin] List all categories for admin",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "categories"
+              ]
+            },
+            "description": "### List all categories for admin\n**Access Role Required**: `Admin`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Create category",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "categories"
+              ]
+            },
+            "description": "### Create category\n**Access Role Required**: `Admin`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Game Credits & Top-Up\",\n  \"slug\": \"game-credits\",\n  \"icon\": \"https://example.com/icons/game.png\",\n  \"sort_order\": 1,\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Update category",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/categories/:category_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "categories",
+                ":category_id"
+              ],
+              "variable": [
+                {
+                  "key": "category_id",
+                  "value": "1",
+                  "description": "Target ID for category_id"
+                }
+              ]
+            },
+            "description": "### Update category\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `category_id`: Target ID for category_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"sample_name\",\n  \"slug\": \"sample-item-slug\",\n  \"image\": \"https://example.com/media/sample.png\",\n  \"description\": \"sample_description\",\n  \"is_active\": true,\n  \"sort_order\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Delete category",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/categories/:category_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "categories",
+                ":category_id"
+              ],
+              "variable": [
+                {
+                  "key": "category_id",
+                  "value": "1",
+                  "description": "Target ID for category_id"
+                }
+              ]
+            },
+            "description": "### Delete category\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `category_id`: Target ID for category_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Reorder category display index",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/categories/:category_id/reorder",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "categories",
+                ":category_id",
+                "reorder"
+              ],
+              "variable": [
+                {
+                  "key": "category_id",
+                  "value": "1",
+                  "description": "Target ID for category_id"
+                }
+              ]
+            },
+            "description": "### Reorder category display index\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `category_id`: Target ID for category_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sort_order\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Public] List active categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "categories"
+              ]
+            },
+            "description": "### List active categories\n**Access Role Required**: `Public`\n",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Public] Get single category by slug",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/categories/:slug",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "categories",
+                ":slug"
+              ],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "1",
+                  "description": "Target ID for slug"
+                }
+              ]
+            },
+            "description": "### Get single category by slug\n**Access Role Required**: `Public`\n\n#### Path Parameters:\n- `slug`: Target ID for slug\n",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints related to 04. Categories"
+    },
+    {
+      "name": "05. Products & Dynamic Fields",
+      "item": [
+        {
+          "name": "[Admin] Update input field configuration",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/fields/:field_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "fields",
+                ":field_id"
+              ],
+              "variable": [
+                {
+                  "key": "field_id",
+                  "value": "1",
+                  "description": "Target ID for field_id"
+                }
+              ]
+            },
+            "description": "### Update input field configuration\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `field_id`: Target ID for field_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"sample_name\",\n  \"label\": \"sample_label\",\n  \"type\": \"PERCENTAGE\",\n  \"placeholder\": \"sample_placeholder\",\n  \"is_required\": true,\n  \"sort_order\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Delete input field configuration",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/fields/:field_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "fields",
+                ":field_id"
+              ],
+              "variable": [
+                {
+                  "key": "field_id",
+                  "value": "1",
+                  "description": "Target ID for field_id"
+                }
+              ]
+            },
+            "description": "### Delete input field configuration\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `field_id`: Target ID for field_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] List all products for admin",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/products",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "category_id",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "category_slug",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "is_active",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "### List all products for admin\n**Access Role Required**: `Admin`\n\n#### Query Parameters:\n- `name` (Optional): \n- `category_id` (Optional): \n- `category_slug` (Optional): \n- `is_active` (Optional): \n- `page` (Optional): \n- `size` (Optional): \n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Create new digital product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/products",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "products"
+              ]
+            },
+            "description": "### Create new digital product\n**Access Role Required**: `Admin`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category_id\": 1,\n  \"name\": \"Free Fire Diamond\",\n  \"slug\": \"free-fire-diamond\",\n  \"description\": \"Instant in-game Free Fire Diamond top-up via Player ID.\",\n  \"image\": \"https://example.com/images/freefire.png\",\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Update product details",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/products/:product_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "products",
+                ":product_id"
+              ],
+              "variable": [
+                {
+                  "key": "product_id",
+                  "value": "1",
+                  "description": "Target ID for product_id"
+                }
+              ]
+            },
+            "description": "### Update product details\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `product_id`: Target ID for product_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"sample_name\",\n  \"slug\": \"sample-item-slug\",\n  \"category_id\": 1,\n  \"image\": \"https://example.com/media/sample.png\",\n  \"description\": \"sample_description\",\n  \"instructions\": \"sample_instructions\",\n  \"is_active\": true,\n  \"sort_order\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Delete product",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/products/:product_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "products",
+                ":product_id"
+              ],
+              "variable": [
+                {
+                  "key": "product_id",
+                  "value": "1",
+                  "description": "Target ID for product_id"
+                }
+              ]
+            },
+            "description": "### Delete product\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `product_id`: Target ID for product_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Add dynamic input field to product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/products/:product_id/fields",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "products",
+                ":product_id",
+                "fields"
+              ],
+              "variable": [
+                {
+                  "key": "product_id",
+                  "value": "1",
+                  "description": "Target ID for product_id"
+                }
+              ]
+            },
+            "description": "### Add dynamic input field to product\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `product_id`: Target ID for product_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"sample_name\",\n  \"label\": \"sample_label\",\n  \"type\": \"text\",\n  \"placeholder\": \"sample_placeholder\",\n  \"is_required\": true,\n  \"sort_order\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Toggle product active status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/products/:product_id/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "products",
+                ":product_id",
+                "status"
+              ],
+              "variable": [
+                {
+                  "key": "product_id",
+                  "value": "1",
+                  "description": "Target ID for product_id"
+                }
+              ]
+            },
+            "description": "### Toggle product active status\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `product_id`: Target ID for product_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Public] Browse active products catalog",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/products",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "category_id",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "category_slug",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "is_active",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "### Browse active products catalog\n**Access Role Required**: `Public`\n\n#### Query Parameters:\n- `name` (Optional): \n- `category_id` (Optional): \n- `category_slug` (Optional): \n- `is_active` (Optional): \n- `page` (Optional): \n- `size` (Optional): \n",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Public] Get required customer input fields for a product",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/products/:product_id/fields",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products",
+                ":product_id",
+                "fields"
+              ],
+              "variable": [
+                {
+                  "key": "product_id",
+                  "value": "1",
+                  "description": "Target ID for product_id"
+                }
+              ]
+            },
+            "description": "### Get required customer input fields for a product\n**Access Role Required**: `Public`\n\n#### Path Parameters:\n- `product_id`: Target ID for product_id\n",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Public] Get product details with packages and required input fields",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/products/:slug",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products",
+                ":slug"
+              ],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "1",
+                  "description": "Target ID for slug"
+                }
+              ]
+            },
+            "description": "### Get product details with packages and required input fields\n**Access Role Required**: `Public`\n\n#### Path Parameters:\n- `slug`: Target ID for slug\n",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints related to 05. Products & Dynamic Fields"
+    },
+    {
+      "name": "06. Packages",
+      "item": [
+        {
+          "name": "[Admin] Update package details",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/packages/:package_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "packages",
+                ":package_id"
+              ],
+              "variable": [
+                {
+                  "key": "package_id",
+                  "value": "1",
+                  "description": "Target ID for package_id"
+                }
+              ]
+            },
+            "description": "### Update package details\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `package_id`: Target ID for package_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"sample_name\",\n  \"price\": 250.0,\n  \"compare_price\": 250.0,\n  \"duration\": \"sample_duration\",\n  \"description\": \"sample_description\",\n  \"is_active\": true,\n  \"sort_order\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Delete package",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/packages/:package_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "packages",
+                ":package_id"
+              ],
+              "variable": [
+                {
+                  "key": "package_id",
+                  "value": "1",
+                  "description": "Target ID for package_id"
+                }
+              ]
+            },
+            "description": "### Delete package\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `package_id`: Target ID for package_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Toggle package active status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/packages/:package_id/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "packages",
+                ":package_id",
+                "status"
+              ],
+              "variable": [
+                {
+                  "key": "package_id",
+                  "value": "1",
+                  "description": "Target ID for package_id"
+                }
+              ]
+            },
+            "description": "### Toggle package active status\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `package_id`: Target ID for package_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Create package option for a product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/products/:product_id/packages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "products",
+                ":product_id",
+                "packages"
+              ],
+              "variable": [
+                {
+                  "key": "product_id",
+                  "value": "1",
+                  "description": "Target ID for product_id"
+                }
+              ]
+            },
+            "description": "### Create package option for a product\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `product_id`: Target ID for product_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"115 Diamonds\",\n  \"price\": 85.0,\n  \"original_price\": 95.0,\n  \"in_stock\": true,\n  \"is_active\": true,\n  \"sort_order\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Public] Get active packages for a product",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/products/:product_id/packages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products",
+                ":product_id",
+                "packages"
+              ],
+              "variable": [
+                {
+                  "key": "product_id",
+                  "value": "1",
+                  "description": "Target ID for product_id"
+                }
+              ]
+            },
+            "description": "### Get active packages for a product\n**Access Role Required**: `Public`\n\n#### Path Parameters:\n- `product_id`: Target ID for product_id\n",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints related to 06. Packages"
+    },
+    {
+      "name": "07. Coupons & Discounts",
+      "item": [
+        {
+          "name": "[Admin] List all coupons for admin",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/coupons",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "coupons"
+              ],
+              "query": [
+                {
+                  "key": "is_active",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "### List all coupons for admin\n**Access Role Required**: `Admin`\n\n#### Query Parameters:\n- `is_active` (Optional): \n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Create coupon",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/coupons",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "coupons"
+              ]
+            },
+            "description": "### Create coupon\n**Access Role Required**: `Admin`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SUMMER20\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 20.0,\n  \"max_discount\": 50.0,\n  \"minimum_order_amount\": 200.0,\n  \"usage_limit\": 100,\n  \"per_user_limit\": 1,\n  \"is_active\": true,\n  \"expires_at\": \"2026-12-31T23:59:59Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Update coupon",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/coupons/:coupon_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "coupons",
+                ":coupon_id"
+              ],
+              "variable": [
+                {
+                  "key": "coupon_id",
+                  "value": "1",
+                  "description": "Target ID for coupon_id"
+                }
+              ]
+            },
+            "description": "### Update coupon\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `coupon_id`: Target ID for coupon_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"sample_code\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 99.99,\n  \"max_discount\": 99.99,\n  \"minimum_order_amount\": 250.0,\n  \"usage_limit\": 1,\n  \"per_user_limit\": 1,\n  \"starts_at\": \"2026-10-01T12:00:00Z\",\n  \"expires_at\": \"2026-10-01T12:00:00Z\",\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Delete coupon",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/coupons/:coupon_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "coupons",
+                ":coupon_id"
+              ],
+              "variable": [
+                {
+                  "key": "coupon_id",
+                  "value": "1",
+                  "description": "Target ID for coupon_id"
+                }
+              ]
+            },
+            "description": "### Delete coupon\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `coupon_id`: Target ID for coupon_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Customer] Validate coupon against a package",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/coupons/validate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "coupons",
+                "validate"
+              ]
+            },
+            "description": "### Validate coupon against a package\n**Access Role Required**: `Customer`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SUMMER20\",\n  \"package_id\": 1,\n  \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints related to 07. Coupons & Discounts"
+    },
+    {
+      "name": "08. Orders & Checkout",
+      "item": [
+        {
+          "name": "[Admin] List all orders for admin",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "status_filter",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "### List all orders for admin\n**Access Role Required**: `Admin`\n\n#### Query Parameters:\n- `status_filter` (Optional): \n- `search` (Optional): \n- `page` (Optional): \n- `size` (Optional): \n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Update admin internal note or fulfillment details",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/orders/:order_id/note",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "orders",
+                ":order_id",
+                "note"
+              ],
+              "variable": [
+                {
+                  "key": "order_id",
+                  "value": "1",
+                  "description": "Target ID for order_id"
+                }
+              ]
+            },
+            "description": "### Update admin internal note or fulfillment details\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `order_id`: Target ID for order_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_note\": \"sample_admin_note\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Update order processing status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/orders/:order_id/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "orders",
+                ":order_id",
+                "status"
+              ],
+              "variable": [
+                {
+                  "key": "order_id",
+                  "value": "1",
+                  "description": "Target ID for order_id"
+                }
+              ]
+            },
+            "description": "### Update order processing status\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `order_id`: Target ID for order_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"COMPLETED\",\n  \"admin_notes\": \"Diamonds transferred successfully to UID 1829384920.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Authenticated] Preview direct checkout calculation and validation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/checkout/preview",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "checkout",
+                "preview"
+              ]
+            },
+            "description": "### Preview direct checkout calculation and validation\n**Access Role Required**: `Authenticated`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"package_id\": 1,\n  \"quantity\": 1,\n  \"coupon_code\": \"DISCOUNT20\",\n  \"input_values\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Authenticated] Place direct order with dynamic inputs and coupon",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            },
+            "description": "### Place direct order with dynamic inputs and coupon\n**Access Role Required**: `Authenticated`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"package_id\": 1,\n  \"quantity\": 1,\n  \"coupon_code\": \"DISCOUNT20\",\n  \"input_values\": {},\n  \"customer_note\": \"sample_customer_note\",\n  \"payment_method_id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Customer] List customer's orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/my-orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "my-orders"
+              ],
+              "query": [
+                {
+                  "key": "status_filter",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "### List customer's orders\n**Access Role Required**: `Customer`\n\n#### Query Parameters:\n- `status_filter` (Optional): \n- `page` (Optional): \n- `size` (Optional): \n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Authenticated] Get single order details by order number",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/:order_number",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                ":order_number"
+              ],
+              "variable": [
+                {
+                  "key": "order_number",
+                  "value": "1",
+                  "description": "Target ID for order_number"
+                }
+              ]
+            },
+            "description": "### Get single order details by order number\n**Access Role Required**: `Authenticated`\n\n#### Path Parameters:\n- `order_number`: Target ID for order_number\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Authenticated] Cancel unpaid pending order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/:order_number/cancel",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                ":order_number",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "order_number",
+                  "value": "1",
+                  "description": "Target ID for order_number"
+                }
+              ]
+            },
+            "description": "### Cancel unpaid pending order\n**Access Role Required**: `Authenticated`\n\n#### Path Parameters:\n- `order_number`: Target ID for order_number\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints related to 08. Orders & Checkout"
+    },
+    {
+      "name": "09. Payment Methods",
+      "item": [
+        {
+          "name": "[Admin] List all payment methods for admin",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/payment-methods",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "payment-methods"
+              ]
+            },
+            "description": "### List all payment methods for admin\n**Access Role Required**: `Admin`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Create payment method channel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/payment-methods",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "payment-methods"
+              ]
+            },
+            "description": "### Create payment method channel\n**Access Role Required**: `Admin`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"bKash Personal\",\n  \"code\": \"BKASH_MANUAL\",\n  \"type\": \"MANUAL\",\n  \"account_number\": \"01700112233\",\n  \"instructions\": \"Send Money to this personal bKash number and enter TrxID below.\",\n  \"qr_code_image\": \"https://example.com/qr/bkash.png\",\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Update payment method channel",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/payment-methods/:method_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "payment-methods",
+                ":method_id"
+              ],
+              "variable": [
+                {
+                  "key": "method_id",
+                  "value": "1",
+                  "description": "Target ID for method_id"
+                }
+              ]
+            },
+            "description": "### Update payment method channel\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `method_id`: Target ID for method_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"sample_name\",\n  \"account_number\": \"sample_account_number\",\n  \"instructions\": \"sample_instructions\",\n  \"logo\": \"sample_logo\",\n  \"is_active\": true,\n  \"sort_order\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Delete payment method channel",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/payment-methods/:method_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "payment-methods",
+                ":method_id"
+              ],
+              "variable": [
+                {
+                  "key": "method_id",
+                  "value": "1",
+                  "description": "Target ID for method_id"
+                }
+              ]
+            },
+            "description": "### Delete payment method channel\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `method_id`: Target ID for method_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Public] List active payment methods (bKash, Nagad, Rocket)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/payment-methods",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payment-methods"
+              ]
+            },
+            "description": "### List active payment methods (bKash, Nagad, Rocket)\n**Access Role Required**: `Public`\n",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints related to 09. Payment Methods"
+    },
+    {
+      "name": "10. Payments & Webhooks",
+      "item": [
+        {
+          "name": "[Admin] List payments for verification",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/payments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "payments"
+              ],
+              "query": [
+                {
+                  "key": "status_filter",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "### List payments for verification\n**Access Role Required**: `Admin`\n\n#### Query Parameters:\n- `status_filter` (Optional): \n- `page` (Optional): \n- `size` (Optional): \n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Reject payment (reverts Order to PAYMENT_PENDING)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/payments/:payment_id/reject",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "payments",
+                ":payment_id",
+                "reject"
+              ],
+              "variable": [
+                {
+                  "key": "payment_id",
+                  "value": "1",
+                  "description": "Target ID for payment_id"
+                }
+              ]
+            },
+            "description": "### Reject payment (reverts Order to PAYMENT_PENDING)\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `payment_id`: Target ID for payment_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_note\": \"Invalid or unverified transaction ID\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Approve payment (marks Payment VERIFIED & Order PAID)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/payments/:payment_id/verify",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "payments",
+                ":payment_id",
+                "verify"
+              ],
+              "variable": [
+                {
+                  "key": "payment_id",
+                  "value": "1",
+                  "description": "Target ID for payment_id"
+                }
+              ]
+            },
+            "description": "### Approve payment (marks Payment VERIFIED & Order PAID)\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `payment_id`: Target ID for payment_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"COMPLETED\",\n  \"admin_notes\": \"Verified bKash statement.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Authenticated] Get payment details for an order",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/payments/order/:order_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "order",
+                ":order_id"
+              ],
+              "variable": [
+                {
+                  "key": "order_id",
+                  "value": "1",
+                  "description": "Target ID for order_id"
+                }
+              ]
+            },
+            "description": "### Get payment details for an order\n**Access Role Required**: `Authenticated`\n\n#### Path Parameters:\n- `order_id`: Target ID for order_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Authenticated] Submit manual payment transaction details",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/payments/submit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "submit"
+              ]
+            },
+            "description": "### Submit manual payment transaction details\n**Access Role Required**: `Authenticated`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_id\": 1,\n  \"payment_method_id\": 1,\n  \"amount\": 250.0,\n  \"transaction_id\": \"sample_transaction_id\",\n  \"sender_number\": \"sample_sender_number\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints related to 10. Payments & Webhooks"
+    },
+    {
+      "name": "11. Wallet & Top-Ups",
+      "item": [
+        {
+          "name": "[Admin] List top-up requests for admin review",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/topups",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "topups"
+              ],
+              "query": [
+                {
+                  "key": "status_filter",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "### List top-up requests for admin review\n**Access Role Required**: `Admin`\n\n#### Query Parameters:\n- `status_filter` (Optional): \n- `page` (Optional): \n- `size` (Optional): \n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Approve top-up and atomically credit customer wallet",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/topups/:topup_id/approve",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "topups",
+                ":topup_id",
+                "approve"
+              ],
+              "variable": [
+                {
+                  "key": "topup_id",
+                  "value": "1",
+                  "description": "Target ID for topup_id"
+                }
+              ]
+            },
+            "description": "### Approve top-up and atomically credit customer wallet\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `topup_id`: Target ID for topup_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_note\": \"sample_admin_note\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Reject top-up request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/topups/:topup_id/reject",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "topups",
+                ":topup_id",
+                "reject"
+              ],
+              "variable": [
+                {
+                  "key": "topup_id",
+                  "value": "1",
+                  "description": "Target ID for topup_id"
+                }
+              ]
+            },
+            "description": "### Reject top-up request\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `topup_id`: Target ID for topup_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_note\": \"sample_admin_note\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Admin manual balance credit or debit adjustment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/wallets/:user_id/adjust",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "wallets",
+                ":user_id",
+                "adjust"
+              ],
+              "variable": [
+                {
+                  "key": "user_id",
+                  "value": "1",
+                  "description": "Target ID for user_id"
+                }
+              ]
+            },
+            "description": "### Admin manual balance credit or debit adjustment\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `user_id`: Target ID for user_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 250.0,\n  \"type\": \"ADJUSTMENT\",\n  \"description\": \"Admin manual balance adjustment\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Authenticated] Pay for order directly using wallet balance",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/orders/:order_number/pay-with-wallet",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                ":order_number",
+                "pay-with-wallet"
+              ],
+              "variable": [
+                {
+                  "key": "order_number",
+                  "value": "1",
+                  "description": "Target ID for order_number"
+                }
+              ]
+            },
+            "description": "### Pay for order directly using wallet balance\n**Access Role Required**: `Authenticated`\n\n#### Path Parameters:\n- `order_number`: Target ID for order_number\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Customer] Get customer wallet balance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/wallet/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "wallet",
+                "me"
+              ]
+            },
+            "description": "### Get customer wallet balance\n**Access Role Required**: `Customer`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Customer] Submit wallet funding top-up request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/wallet/topup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "wallet",
+                "topup"
+              ]
+            },
+            "description": "### Submit wallet funding top-up request\n**Access Role Required**: `Customer`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 500.0,\n  \"payment_method_id\": 1,\n  \"transaction_id\": \"TRX_TOPUP_8899\",\n  \"sender_phone\": \"+8801700112233\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Customer] Get customer top-up request history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/wallet/topups/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "wallet",
+                "topups",
+                "me"
+              ]
+            },
+            "description": "### Get customer top-up request history\n**Access Role Required**: `Customer`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Customer] Get customer wallet transaction history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/wallet/transactions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "wallet",
+                "transactions"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "### Get customer wallet transaction history\n**Access Role Required**: `Customer`\n\n#### Query Parameters:\n- `page` (Optional): \n- `size` (Optional): \n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints related to 11. Wallet & Top-Ups"
+    },
+    {
+      "name": "12. Lottery & Lucky Spin",
+      "item": [
+        {
+          "name": "[Admin] List all lottery campaigns for admin",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/lotteries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "lotteries"
+              ]
+            },
+            "description": "### List all lottery campaigns for admin\n**Access Role Required**: `Admin`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Create lottery campaign",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/lotteries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "lotteries"
+              ]
+            },
+            "description": "### Create lottery campaign\n**Access Role Required**: `Admin`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Mega Weekly Lucky Spin\",\n  \"description\": \"Buy a ticket for 50 BDT and win up to 5,000 Diamonds!\",\n  \"ticket_price\": 50.0,\n  \"total_tickets\": 100,\n  \"start_date\": \"2026-10-01T00:00:00Z\",\n  \"end_date\": \"2026-10-07T23:59:59Z\",\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] View customer entry audit logs for a lottery campaign",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/lotteries/:lottery_id/entries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "lotteries",
+                ":lottery_id",
+                "entries"
+              ],
+              "variable": [
+                {
+                  "key": "lottery_id",
+                  "value": "1",
+                  "description": "Target ID for lottery_id"
+                }
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "### View customer entry audit logs for a lottery campaign\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `lottery_id`: Target ID for lottery_id\n\n#### Query Parameters:\n- `page` (Optional): \n- `size` (Optional): \n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Add prize to lottery campaign",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/lotteries/:lottery_id/prizes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "lotteries",
+                ":lottery_id",
+                "prizes"
+              ],
+              "variable": [
+                {
+                  "key": "lottery_id",
+                  "value": "1",
+                  "description": "Target ID for lottery_id"
+                }
+              ]
+            },
+            "description": "### Add prize to lottery campaign\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `lottery_id`: Target ID for lottery_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rank\": 1,\n  \"prize_title\": \"Grand Prize: 5,000 Diamonds\",\n  \"prize_type\": \"diamonds\",\n  \"prize_value\": \"5000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Authenticated] Get active lottery campaign and prize pool",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/lottery/active",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lottery",
+                "active"
+              ]
+            },
+            "description": "### Get active lottery campaign and prize pool\n**Access Role Required**: `Authenticated`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Authenticated] Check remaining lottery spin attempts for customer",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/lottery/my-eligibility",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lottery",
+                "my-eligibility"
+              ]
+            },
+            "description": "### Check remaining lottery spin attempts for customer\n**Access Role Required**: `Authenticated`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Authenticated] Get customer's past spin attempts and won prizes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/lottery/my-history",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lottery",
+                "my-history"
+              ]
+            },
+            "description": "### Get customer's past spin attempts and won prizes\n**Access Role Required**: `Authenticated`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Authenticated] Spin lottery wheel to win rewards",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/lottery/:lottery_id/spin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lottery",
+                ":lottery_id",
+                "spin"
+              ],
+              "variable": [
+                {
+                  "key": "lottery_id",
+                  "value": "1",
+                  "description": "Target ID for lottery_id"
+                }
+              ]
+            },
+            "description": "### Spin lottery wheel to win rewards\n**Access Role Required**: `Authenticated`\n\n#### Path Parameters:\n- `lottery_id`: Target ID for lottery_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints related to 12. Lottery & Lucky Spin"
+    },
+    {
+      "name": "13. Marketing (Banners & Popups)",
+      "item": [
+        {
+          "name": "[Admin] List all banners for admin",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/banners",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "banners"
+              ]
+            },
+            "description": "### List all banners for admin\n**Access Role Required**: `Admin`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Create promotional banner",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/banners",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "banners"
+              ]
+            },
+            "description": "### Create promotional banner\n**Access Role Required**: `Admin`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"image\": \"https://example.com/banners/summer_sale.png\",\n  \"title\": \"Summer Super Sale\",\n  \"description\": \"50% off on premium passes and streaming accounts!\",\n  \"button_text\": \"Shop Now\",\n  \"button_url\": \"/category/game-credits\",\n  \"is_active\": true,\n  \"sort_order\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Update banner",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/banners/:banner_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "banners",
+                ":banner_id"
+              ],
+              "variable": [
+                {
+                  "key": "banner_id",
+                  "value": "1",
+                  "description": "Target ID for banner_id"
+                }
+              ]
+            },
+            "description": "### Update banner\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `banner_id`: Target ID for banner_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"image\": \"https://example.com/media/sample.png\",\n  \"mobile_image\": \"https://example.com/media/sample.png\",\n  \"title\": \"sample_title\",\n  \"description\": \"sample_description\",\n  \"button_text\": \"sample_button_text\",\n  \"button_url\": \"https://example.com/media/sample.png\",\n  \"sort_order\": 0,\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Delete banner",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/banners/:banner_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "banners",
+                ":banner_id"
+              ],
+              "variable": [
+                {
+                  "key": "banner_id",
+                  "value": "1",
+                  "description": "Target ID for banner_id"
+                }
+              ]
+            },
+            "description": "### Delete banner\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `banner_id`: Target ID for banner_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] List all popups for admin",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/popups",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "popups"
+              ]
+            },
+            "description": "### List all popups for admin\n**Access Role Required**: `Admin`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Create announcement popup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/popups",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "popups"
+              ]
+            },
+            "description": "### Create announcement popup\n**Access Role Required**: `Admin`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Special Flash Promo!\",\n  \"content\": \"Use coupon FLASH15 for instant 15% discount on all game credits today!\",\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Admin] Update popup",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/popups/:popup_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "popups",
+                ":popup_id"
+              ],
+              "variable": [
+                {
+                  "key": "popup_id",
+                  "value": "1",
+                  "description": "Target ID for popup_id"
+                }
+              ]
+            },
+            "description": "### Update popup\n**Access Role Required**: `Admin`\n\n#### Path Parameters:\n- `popup_id`: Target ID for popup_id\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"sample_title\",\n  \"content\": \"sample_content\",\n  \"image\": \"https://example.com/media/sample.png\",\n  \"button_text\": \"sample_button_text\",\n  \"button_url\": \"https://example.com/media/sample.png\",\n  \"display_type\": \"PERCENTAGE\",\n  \"starts_at\": \"2026-10-01T12:00:00Z\",\n  \"ends_at\": \"2026-10-01T12:00:00Z\",\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Public] Get active banners for homepage display",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/banners",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "banners"
+              ]
+            },
+            "description": "### Get active banners for homepage display\n**Access Role Required**: `Public`\n",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Public] Get active announcement popup",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/popups/active",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "popups",
+                "active"
+              ]
+            },
+            "description": "### Get active announcement popup\n**Access Role Required**: `Public`\n",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints related to 13. Marketing (Banners & Popups)"
+    },
+    {
+      "name": "14. Site Settings",
+      "item": [
+        {
+          "name": "[Admin] Update site settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/settings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "settings"
+              ]
+            },
+            "description": "### Update site settings\n**Access Role Required**: `Admin`\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"site_name\": \"Digital Product Selling System\",\n  \"support_phone\": \"+8801999888777\",\n  \"support_email\": \"support@boostghor.com\",\n  \"telegram_url\": \"https://t.me/boostghorsupport\",\n  \"whatsapp_url\": \"https://wa.me/8801999888777\",\n  \"notice_text\": \"Notice: bKash payment gateway maintenance on Sunday 2 AM - 4 AM.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Public] Get public site settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/settings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "settings"
+              ]
+            },
+            "description": "### Get public site settings\n**Access Role Required**: `Public`\n",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints related to 14. Site Settings"
+    },
+    {
+      "name": "15. Media Uploads",
+      "item": [
+        {
+          "name": "[Authenticated] Delete an uploaded file by its URL",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/media",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "media"
+              ],
+              "query": [
+                {
+                  "key": "file_url",
+                  "value": "",
+                  "description": "The media URL to delete (e.g. /media/products/uuid.jpg)",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "### Delete an uploaded file by its URL\n**Access Role Required**: `Authenticated`\n\n#### Query Parameters:\n- `file_url` (Required): The media URL to delete (e.g. /media/products/uuid.jpg)\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Authenticated] Upload a single file or image",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/media/upload",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "media",
+                "upload"
+              ],
+              "query": [
+                {
+                  "key": "folder",
+                  "value": "general",
+                  "description": "Subfolder inside uploads (e.g. products, avatars)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "### Upload a single file or image\n**Access Role Required**: `Authenticated`\n\n#### Query Parameters:\n- `folder` (Optional): Subfolder inside uploads (e.g. products, avatars)\n",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "Select an image or document to upload"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints related to 15. Media Uploads"
+    },
+    {
+      "name": "16. System Health",
+      "item": [
+        {
+          "name": "[Public] Health check endpoint for monitoring service and database status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "health"
+              ]
+            },
+            "description": "### Health check endpoint for monitoring service and database status\n**Access Role Required**: `Public`\n",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Public] Health check endpoint for monitoring service and database status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "### Health check endpoint for monitoring service and database status\n**Access Role Required**: `Public`\n",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints related to 16. System Health"
+    }
+  ]
+}

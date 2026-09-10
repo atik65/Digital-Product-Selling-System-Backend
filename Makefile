@@ -82,3 +82,7 @@ format: ## Run ruff formatter
 
 test: ## Run unit tests with pytest
 	uv run pytest
+
+postman: ## Generate Postman Collection v2.1.0 JSON file
+	uv run python scripts/generate_postman_collection.py
+
