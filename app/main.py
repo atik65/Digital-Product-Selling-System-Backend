@@ -21,6 +21,7 @@ from app.api.routes import (
     settings as settings_route,
     dashboard,
     media,
+    special_products,
 )
 from app.core.config import settings
 from app.core.exceptions import register_exception_handlers
@@ -68,6 +69,7 @@ all_routers = [
     auth.router,
     users.router,
     categories.router,
+    special_products.router,
     products.router,
     packages.router,
     coupons.router,
@@ -87,8 +89,9 @@ for router in all_routers:
 
 app.include_router(api_v1_router)
 
-# Root-level health check for container orchestrators
+# Root-level health check and special-products endpoint
 app.include_router(health.router)
+app.include_router(special_products.router)
 
 # 7. Ensure uploads directory exists and mount static media files
 Path("uploads").mkdir(parents=True, exist_ok=True)
