@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # Google OAuth2
-    GOOGLE_CLIENT_ID: str = "Test"
+    GOOGLE_CLIENT_ID: str = ""
 
     # SMS Device Webhook Authentication
     SMS_WEBHOOK_SECRET: str = "default-secure-sms-device-secret-key-change-in-prod"
