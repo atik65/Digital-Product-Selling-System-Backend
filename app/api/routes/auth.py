@@ -10,6 +10,7 @@ from app.schemas.user import (
     UserResponse,
     UserUpdate,
     TokenResponse,
+    LoginRequest,
     GoogleLoginRequest,
     AdminLoginRequest,
     RefreshTokenRequest,
@@ -61,6 +62,28 @@ def google_login(
         "success": True,
         "status_code": status.HTTP_200_OK,
         "message": "Google authentication successful",
+        "data": result,
+    }
+
+
+@router.post(
+    "/login",
+    response_model=StandardResponse[TokenResponse],
+    status_code=status.HTTP_200_OK,
+    summary="User credential login",
+)
+@limiter.limit("15/minute")
+def login(
+    request: Request,
+    response: Response,
+    body: LoginRequest,
+    db: Session = Depends(get_db),
+):
+    result = auth_service.login(db, body)
+    return {
+        "success": True,
+        "status_code": status.HTTP_200_OK,
+        "message": "Authentication successful",
         "data": result,
     }
 

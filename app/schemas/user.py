@@ -39,6 +39,11 @@ class GoogleLoginRequest(BaseModel):
     id_token: str
 
 
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
 class AdminLoginRequest(BaseModel):
     email: EmailStr
     password: str

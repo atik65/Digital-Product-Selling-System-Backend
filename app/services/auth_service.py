@@ -21,6 +21,7 @@ from app.repositories.user_repository import UserRepository
 from app.repositories.wallet_repository import WalletRepository
 from app.schemas.user import (
     UserUpdate,
+    LoginRequest,
     AdminLoginRequest,
     GoogleLoginRequest,
     RefreshTokenRequest,
@@ -90,6 +91,30 @@ class AuthService:
                     "is_active": True,
                 }
                 user = self.user_repo.create(db, user_data)
+
+        if not user.is_active:
+            raise ForbiddenException("Account has been suspended")
+
+        self._ensure_user_wallet(db, user.id)
+
+        access_token = create_access_token(user.id, user.role)
+        refresh_token = create_refresh_token(user.id)
+
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer",
+            "user": user,
+        }
+
+    def login(self, db: Session, req: LoginRequest) -> dict:
+        """Authenticates a user via email and password."""
+        user = self.user_repo.get_by_email(db, req.email)
+        if not user or not user.hashed_password:
+            raise UnauthorizedException("Invalid email or password")
+
+        if not verify_password(req.password, user.hashed_password):
+            raise UnauthorizedException("Invalid email or password")
 
         if not user.is_active:
             raise ForbiddenException("Account has been suspended")

@@ -193,3 +193,42 @@ def test_signup_missing_required_fields(client):
 
     res_no_email = client.post("/api/v1/auth/signup", json={"password": "noemailpass"})
     assert res_no_email.status_code == 422
+
+
+def test_user_login_success(client, test_user):
+    """Test regular customer user can log in via /auth/login with valid credentials."""
+    payload = {
+        "email": test_user.email,
+        "password": "password123",
+    }
+    response = client.post("/api/v1/auth/login", json=payload)
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["success"] is True
+    assert "access_token" in data["data"]
+    assert "refresh_token" in data["data"]
+    assert data["data"]["token_type"] == "bearer"
+    assert data["data"]["user"]["email"] == test_user.email
+
+
+def test_user_login_invalid_password(client, test_user):
+    """Test login with wrong password fails with 401."""
+    payload = {
+        "email": test_user.email,
+        "password": "wrongpassword",
+    }
+    response = client.post("/api/v1/auth/login", json=payload)
+    assert response.status_code == 401
+    assert response.json()["success"] is False
+
+
+def test_user_login_nonexistent_email(client):
+    """Test login with non-existent email fails with 401."""
+    payload = {
+        "email": "notfound@example.com",
+        "password": "somepassword123",
+    }
+    response = client.post("/api/v1/auth/login", json=payload)
+    assert response.status_code == 401
+    assert response.json()["success"] is False
