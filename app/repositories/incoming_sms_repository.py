@@ -30,9 +30,7 @@ class IncomingSmsRepository:
             .first()
         )
 
-    def get_by_trx_id(
-        self, db: Session, trx_id: str
-    ) -> Optional[IncomingSms]:
+    def get_by_trx_id(self, db: Session, trx_id: str) -> Optional[IncomingSms]:
         return (
             db.query(IncomingSms)
             .filter(
@@ -86,9 +84,7 @@ class IncomingSmsRepository:
         search: Optional[str] = None,
     ):
         try:
-            query = db.query(IncomingSms).filter(
-                IncomingSms.is_deleted.is_(False)
-            )
+            query = db.query(IncomingSms).filter(IncomingSms.is_deleted.is_(False))
 
             if is_matched is not None:
                 query = query.filter(IncomingSms.is_matched == is_matched)

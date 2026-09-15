@@ -109,3 +109,87 @@ def test_refresh_token_success(client, admin_user):
     data = response.json()
     assert data["success"] is True
     assert "access_token" in data["data"]
+
+
+def test_signup_success_default_role_user(client, db):
+    """Test user signup with required email and password assigns default role 'user' and creates wallet."""
+    from app.models.wallet import Wallet
+    from app.models.user import User
+
+    payload = {
+        "email": "newuser@example.com",
+        "password": "strongpassword123",
+    }
+    response = client.post("/api/v1/auth/signup", json=payload)
+    assert response.status_code == 201
+
+    data = response.json()
+    assert data["success"] is True
+    assert data["message"] == "User registered successfully"
+    user_info = data["data"]["user"]
+    assert user_info["email"] == "newuser@example.com"
+    assert user_info["role"] == "user"
+    assert "access_token" in data["data"]
+    assert "refresh_token" in data["data"]
+    assert data["data"]["token_type"] == "bearer"
+
+    # Verify user in database
+    created_user = db.query(User).filter(User.email == "newuser@example.com").first()
+    assert created_user is not None
+    assert created_user.role == "user"
+
+    # Verify wallet was initialized
+    wallet = db.query(Wallet).filter(Wallet.user_id == created_user.id).first()
+    assert wallet is not None
+    assert wallet.balance == 0.0
+
+
+def test_signup_with_custom_username_and_name(client):
+    """Test user signup with custom username and name."""
+    payload = {
+        "email": "customname@example.com",
+        "password": "strongpassword123",
+        "name": "Custom Full Name",
+        "username": "custom_handle",
+    }
+    response = client.post("/api/v1/auth/signup", json=payload)
+    assert response.status_code == 201
+
+    data = response.json()["data"]
+    assert data["user"]["username"] == "custom_handle"
+    assert data["user"]["name"] == "Custom Full Name"
+    assert data["user"]["role"] == "user"
+
+
+def test_signup_duplicate_email(client, test_user):
+    """Test signup with already registered email fails with 400."""
+    payload = {
+        "email": test_user.email,
+        "password": "anypassword123",
+    }
+    response = client.post("/api/v1/auth/signup", json=payload)
+    assert response.status_code == 400
+    assert "already registered" in response.json()["message"].lower()
+
+
+def test_signup_duplicate_username(client, test_user):
+    """Test signup with already taken username fails with 400."""
+    payload = {
+        "email": "unregistered@example.com",
+        "password": "anypassword123",
+        "username": test_user.username,
+    }
+    response = client.post("/api/v1/auth/signup", json=payload)
+    assert response.status_code == 400
+    assert "already taken" in response.json()["message"].lower()
+
+
+def test_signup_missing_required_fields(client):
+    """Test signup without password or email returns 422 validation error."""
+    res_no_password = client.post(
+        "/api/v1/auth/signup", json={"email": "nopass@example.com"}
+    )
+    assert res_no_password.status_code == 422
+
+    res_no_email = client.post("/api/v1/auth/signup", json={"password": "noemailpass"})
+    assert res_no_email.status_code == 422

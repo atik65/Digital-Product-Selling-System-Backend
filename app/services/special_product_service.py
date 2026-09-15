@@ -46,7 +46,12 @@ class SpecialProductService:
                     for p in cat.products
                     if not p.is_deleted and (not active_only or p.is_active)
                 ]
-                prod_list.sort(key=lambda p: (p.sort_order if p.sort_order is not None else 0, p.id))
+                prod_list.sort(
+                    key=lambda p: (
+                        p.sort_order if p.sort_order is not None else 0,
+                        p.id,
+                    )
+                )
 
                 mapped_products: List[SpecialProductItem] = []
 
@@ -71,10 +76,13 @@ class SpecialProductService:
                     )
 
                     # Dynamic input fields mapping
-                    active_fields = [
-                        f for f in prod.input_fields if not f.is_deleted
-                    ]
-                    active_fields.sort(key=lambda f: (f.sort_order if f.sort_order is not None else 0, f.id))
+                    active_fields = [f for f in prod.input_fields if not f.is_deleted]
+                    active_fields.sort(
+                        key=lambda f: (
+                            f.sort_order if f.sort_order is not None else 0,
+                            f.id,
+                        )
+                    )
 
                     first_input = (
                         active_fields[0].label
@@ -82,9 +90,7 @@ class SpecialProductService:
                         else (prod.instructions or "এখানে আপনার তথ্য বসান")
                     )
                     sec_input = (
-                        active_fields[1].label
-                        if len(active_fields) > 1
-                        else "null"
+                        active_fields[1].label if len(active_fields) > 1 else "null"
                     )
 
                     # Timestamps ISO format

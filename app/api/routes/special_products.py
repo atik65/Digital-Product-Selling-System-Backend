@@ -13,7 +13,9 @@ service = SpecialProductService()
 
 @router.get(
     "/special-products",
-    response_model=Union[List[SpecialCategoryResponse], StandardResponse[List[SpecialCategoryResponse]]],
+    response_model=Union[
+        List[SpecialCategoryResponse], StandardResponse[List[SpecialCategoryResponse]]
+    ],
     status_code=status.HTTP_200_OK,
     summary="Landing Page: Get all categories with nested special products",
     description=(
@@ -52,7 +54,9 @@ def get_special_products(
 
 @router.get(
     "/products/special",
-    response_model=Union[List[SpecialCategoryResponse], StandardResponse[List[SpecialCategoryResponse]]],
+    response_model=Union[
+        List[SpecialCategoryResponse], StandardResponse[List[SpecialCategoryResponse]]
+    ],
     status_code=status.HTTP_200_OK,
     summary="Landing Page: Get special products (alias route)",
     description="Alias route for /special-products",

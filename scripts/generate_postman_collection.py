@@ -437,11 +437,13 @@ def build_postman_collection() -> Dict[str, Any]:
             # Headers
             headers: List[Dict[str, str]] = []
             if "/payments/webhook/sms" in path:
-                headers.append({
-                    "key": "X-Device-Secret",
-                    "value": "default-secure-sms-device-secret-key-change-in-prod",
-                    "description": "Secret token configured on Android forwarding device",
-                })
+                headers.append(
+                    {
+                        "key": "X-Device-Secret",
+                        "value": "default-secure-sms-device-secret-key-change-in-prod",
+                        "description": "Secret token configured on Android forwarding device",
+                    }
+                )
 
             # Request Body
             request_body: Optional[Dict[str, Any]] = None

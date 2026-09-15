@@ -40,9 +40,7 @@ class SmsParserService:
         )
 
         # TrxID pattern: e.g. "TrxID 9K48X78L9" or "TrxID: 9K48X78L9"
-        trx_match = re.search(
-            r"TrxID:?\s*([A-Z0-9_-]+)", msg, re.IGNORECASE
-        )
+        trx_match = re.search(r"TrxID:?\s*([A-Z0-9_-]+)", msg, re.IGNORECASE)
         trx_id = trx_match.group(1).upper() if trx_match else None
 
         # Amount pattern: e.g. "Tk 500.00" or "Tk 1,500.00"
@@ -57,9 +55,7 @@ class SmsParserService:
                 amount = None
 
         # Sender Phone pattern: e.g. "from 01711223344"
-        phone_match = re.search(
-            r"from\s*(\+?[0-9]{11,14})", msg, re.IGNORECASE
-        )
+        phone_match = re.search(r"from\s*(\+?[0-9]{11,14})", msg, re.IGNORECASE)
         phone = phone_match.group(1) if phone_match else None
 
         # Balance pattern: e.g. "Balance Tk 1,234.00"
@@ -87,14 +83,10 @@ class SmsParserService:
     @staticmethod
     def _parse_nagad(msg: str) -> ParsedSms:
         # Nagad usually contains "TxnID:" or "Txn ID:"
-        is_received = bool(
-            re.search(r"(received|amount:|cash in)", msg, re.IGNORECASE)
-        )
+        is_received = bool(re.search(r"(received|amount:|cash in)", msg, re.IGNORECASE))
 
         # TrxID pattern: e.g. "TxnID: 71KJ892K" or "Txn ID: 71KJ892K"
-        trx_match = re.search(
-            r"Txn\s*ID:?\s*([A-Z0-9_-]+)", msg, re.IGNORECASE
-        )
+        trx_match = re.search(r"Txn\s*ID:?\s*([A-Z0-9_-]+)", msg, re.IGNORECASE)
         trx_id = trx_match.group(1).upper() if trx_match else None
 
         # Amount pattern: e.g. "Amount: Tk 500.00" or "Tk 500.00"
@@ -140,9 +132,7 @@ class SmsParserService:
 
     @staticmethod
     def _parse_rocket(msg: str) -> ParsedSms:
-        is_received = bool(
-            re.search(r"(received|credited)", msg, re.IGNORECASE)
-        )
+        is_received = bool(re.search(r"(received|credited)", msg, re.IGNORECASE))
 
         trx_match = re.search(
             r"(?:TxnId|Txn ID|TrxID):?\s*([A-Z0-9_-]+)", msg, re.IGNORECASE
@@ -159,9 +149,7 @@ class SmsParserService:
             except ValueError:
                 amount = None
 
-        phone_match = re.search(
-            r"from\s*(\+?[0-9]{11,14})", msg, re.IGNORECASE
-        )
+        phone_match = re.search(r"from\s*(\+?[0-9]{11,14})", msg, re.IGNORECASE)
         phone = phone_match.group(1) if phone_match else None
 
         bal_match = re.search(

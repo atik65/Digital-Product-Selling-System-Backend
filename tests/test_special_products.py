@@ -60,8 +60,15 @@ def test_special_products_endpoint_and_sample_structure(client, db):
 
     first_cat = data[0]
     expected_cat_keys = {
-        "id", "name", "logo", "created_at", "updated_at",
-        "lavel", "is_active", "product_design", "products"
+        "id",
+        "name",
+        "logo",
+        "created_at",
+        "updated_at",
+        "lavel",
+        "is_active",
+        "product_design",
+        "products",
     }
     assert expected_cat_keys.issubset(first_cat.keys())
     assert isinstance(first_cat["products"], list)
@@ -69,15 +76,40 @@ def test_special_products_endpoint_and_sample_structure(client, db):
 
     first_prod = first_cat["products"][0]
     expected_prod_keys = {
-        "id", "name", "brand_id", "category_id", "lavel",
-        "description", "tag_line", "logo", "buy_price",
-        "sale_price", "is_shop", "quantity", "type", "is_auto",
-        "is_active", "is_hot", "created_at", "updated_at",
-        "check_id", "slug", "have_time_limite", "limite_qty",
-        "limite_duration", "is_reseller", "input_name",
-        "main_price", "is_qty_minus", "is_user_show_qty",
-        "is_remove_char", "sec_input_name", "redem_link",
-        "package_design", "check_unique_player_id", "is_premium",
+        "id",
+        "name",
+        "brand_id",
+        "category_id",
+        "lavel",
+        "description",
+        "tag_line",
+        "logo",
+        "buy_price",
+        "sale_price",
+        "is_shop",
+        "quantity",
+        "type",
+        "is_auto",
+        "is_active",
+        "is_hot",
+        "created_at",
+        "updated_at",
+        "check_id",
+        "slug",
+        "have_time_limite",
+        "limite_qty",
+        "limite_duration",
+        "is_reseller",
+        "input_name",
+        "main_price",
+        "is_qty_minus",
+        "is_user_show_qty",
+        "is_remove_char",
+        "sec_input_name",
+        "redem_link",
+        "package_design",
+        "check_unique_player_id",
+        "is_premium",
         "premium_min_amount",
     }
     assert expected_prod_keys.issubset(first_prod.keys())

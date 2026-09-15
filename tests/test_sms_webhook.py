@@ -60,9 +60,7 @@ def test_webhook_device_secret_auth(client):
     assert res.status_code == 401
 
 
-def test_scenario_a_payment_first_sms_second(
-    client, admin_auth_headers, auth_headers
-):
+def test_scenario_a_payment_first_sms_second(client, admin_auth_headers, auth_headers):
     """Customer submits order payment first, SMS arrives second -> Auto-verifies to PAID."""
     # 1. Setup Product, Package, Payment Method
     prod = client.post(
@@ -139,9 +137,7 @@ def test_scenario_a_payment_first_sms_second(
     assert order_after.json()["data"]["status"] == "PAID"
 
 
-def test_scenario_b_sms_first_payment_second(
-    client, admin_auth_headers, auth_headers
-):
+def test_scenario_b_sms_first_payment_second(client, admin_auth_headers, auth_headers):
     """SMS arrives on phone first, Customer submits payment second -> Instantly verified to PAID."""
     # 1. Setup Product, Package, Payment Method
     prod = client.post(
@@ -228,9 +224,9 @@ def test_sms_topup_auto_approval(client, admin_auth_headers, auth_headers):
     ).json()["data"]
 
     # 2. Get initial wallet balance
-    init_wallet = client.get("/api/v1/wallet/me", headers=auth_headers).json()[
-        "data"
-    ]["balance"]
+    init_wallet = client.get("/api/v1/wallet/me", headers=auth_headers).json()["data"][
+        "balance"
+    ]
 
     # 3. Customer submits wallet topup
     topup_trx = "TOPUP_TRX_7788"
@@ -262,9 +258,9 @@ def test_sms_topup_auto_approval(client, admin_auth_headers, auth_headers):
     assert w_res.json()["data"]["matched_entity_type"] == "WALLET_TOPUP"
 
     # 5. Customer wallet balance increased by 350 BDT!
-    new_wallet = client.get("/api/v1/wallet/me", headers=auth_headers).json()[
-        "data"
-    ]["balance"]
+    new_wallet = client.get("/api/v1/wallet/me", headers=auth_headers).json()["data"][
+        "balance"
+    ]
     assert new_wallet == init_wallet + 350.0
 
 

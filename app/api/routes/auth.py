@@ -13,11 +13,34 @@ from app.schemas.user import (
     GoogleLoginRequest,
     AdminLoginRequest,
     RefreshTokenRequest,
+    SignupRequest,
 )
 from app.services.auth_service import AuthService
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 auth_service = AuthService()
+
+
+@router.post(
+    "/signup",
+    response_model=StandardResponse[TokenResponse],
+    status_code=status.HTTP_201_CREATED,
+    summary="Register a new user account",
+)
+@limiter.limit("10/minute")
+def signup(
+    request: Request,
+    response: Response,
+    body: SignupRequest,
+    db: Session = Depends(get_db),
+):
+    result = auth_service.signup(db, body)
+    return {
+        "success": True,
+        "status_code": status.HTTP_201_CREATED,
+        "message": "User registered successfully",
+        "data": result,
+    }
 
 
 @router.post(

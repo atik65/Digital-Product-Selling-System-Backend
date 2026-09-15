@@ -62,6 +62,34 @@ class UserRepository:
                 f"Failed to create user: {str(e)}", original_exception=e
             )
 
+    def create_user(
+        self,
+        db: Session,
+        email: str,
+        hashed_password: str,
+        username: str,
+        role: str = "user",
+        name: Optional[str] = None,
+    ) -> User:
+        user = User(
+            email=email,
+            hashed_password=hashed_password,
+            username=username,
+            role=role,
+            name=name,
+            is_active=True,
+        )
+        try:
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            return user
+        except Exception as e:
+            db.rollback()
+            raise DatabaseException(
+                f"Failed to create user: {str(e)}", original_exception=e
+            )
+
     def update(self, db: Session, user: User, update_data: dict) -> User:
         try:
             for key, value in update_data.items():

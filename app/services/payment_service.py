@@ -55,6 +55,7 @@ class PaymentService:
         # Check if SMS already arrived for this transaction
         from app.services.sms_reconciliation_service import SmsReconciliationService
         from datetime import datetime, timezone
+
         sms_service = SmsReconciliationService()
         matched_sms = sms_service.check_and_match_unclaimed(
             db,
@@ -66,7 +67,9 @@ class PaymentService:
         if matched_sms:
             payment.status = "VERIFIED"
             payment.verified_at = datetime.now(timezone.utc)
-            payment.admin_note = f"Auto-verified instantly via SMS ({matched_sms.provider})"
+            payment.admin_note = (
+                f"Auto-verified instantly via SMS ({matched_sms.provider})"
+            )
             self.order_repo.update_status(db, order, "PAID")
             db.commit()
             db.refresh(payment)

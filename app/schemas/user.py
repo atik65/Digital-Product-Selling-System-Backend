@@ -44,6 +44,13 @@ class AdminLoginRequest(BaseModel):
     password: str
 
 
+class SignupRequest(BaseModel):
+    email: EmailStr
+    password: str
+    name: Optional[str] = None
+    username: Optional[str] = None
+
+
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
 

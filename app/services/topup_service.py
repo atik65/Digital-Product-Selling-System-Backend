@@ -38,6 +38,7 @@ class TopUpService:
         # Check if SMS already arrived for this transaction
         from app.services.sms_reconciliation_service import SmsReconciliationService
         from datetime import datetime, timezone
+
         sms_service = SmsReconciliationService()
         matched_sms = sms_service.check_and_match_unclaimed(
             db,
@@ -49,7 +50,9 @@ class TopUpService:
         if matched_sms:
             topup.status = "APPROVED"
             topup.verified_at = datetime.now(timezone.utc)
-            topup.admin_note = f"Auto-approved instantly via SMS ({matched_sms.provider})"
+            topup.admin_note = (
+                f"Auto-approved instantly via SMS ({matched_sms.provider})"
+            )
             wallet = self.wallet_repo.get_by_user_id(db, user_id, for_update=True)
             if not wallet:
                 wallet = self.wallet_repo.create_wallet(db, user_id)

@@ -11,6 +11,7 @@ from app.core.exceptions import (
 )
 from app.core.security import (
     verify_password,
+    hash_password,
     create_access_token,
     create_refresh_token,
     decode_token,
@@ -23,6 +24,7 @@ from app.schemas.user import (
     AdminLoginRequest,
     GoogleLoginRequest,
     RefreshTokenRequest,
+    SignupRequest,
 )
 
 
@@ -147,3 +149,45 @@ class AuthService:
         return self.user_repo.update(
             db, current_user, data.model_dump(exclude_unset=True)
         )
+
+    def signup(self, db: Session, req: SignupRequest) -> dict:
+        """Registers a new user with default role 'user', initializes wallet, and issues tokens."""
+        existing_user = self.user_repo.get_by_email(db, req.email)
+        if existing_user:
+            raise ValidationException("Email is already registered")
+
+        if req.username:
+            if self.user_repo.get_by_username(db, req.username):
+                raise ValidationException("Username is already taken")
+            username = req.username
+        else:
+            base_username = re.sub(r"[^a-zA-Z0-9]", "", req.email.split("@")[0]).lower()
+            if not base_username:
+                base_username = "user"
+            username = base_username
+            counter = 1
+            while self.user_repo.get_by_username(db, username):
+                username = f"{base_username}{counter}"
+                counter += 1
+
+        hashed = hash_password(req.password)
+        user = self.user_repo.create_user(
+            db=db,
+            email=req.email,
+            hashed_password=hashed,
+            username=username,
+            role="user",
+            name=req.name,
+        )
+
+        self._ensure_user_wallet(db, user.id)
+
+        access_token = create_access_token(user.id, user.role)
+        refresh_token = create_refresh_token(user.id)
+
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer",
+            "user": user,
+        }

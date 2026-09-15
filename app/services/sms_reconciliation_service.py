@@ -84,11 +84,7 @@ class SmsReconciliationService:
                     f"Auto-verified via SMS Webhook ({parsed.provider})"
                 )
 
-                order = (
-                    db.query(Order)
-                    .filter(Order.id == payment.order_id)
-                    .first()
-                )
+                order = db.query(Order).filter(Order.id == payment.order_id).first()
                 if order and order.status in ["PENDING", "PAYMENT_PENDING"]:
                     order.status = "PAID"
 
@@ -109,9 +105,7 @@ class SmsReconciliationService:
                     message=f"Order #{payment.order_id} auto-verified and marked PAID",
                 )
             else:
-                payment.admin_note = (
-                    f"Amount mismatch: required {payment.amount} BDT, received {parsed.amount} BDT"
-                )
+                payment.admin_note = f"Amount mismatch: required {payment.amount} BDT, received {parsed.amount} BDT"
                 sms_record.status = "MISMATCH"
                 db.commit()
                 return SmsWebhookResponse(
@@ -138,9 +132,7 @@ class SmsReconciliationService:
                 # Approve TopUp & Credit Balance
                 topup.status = "APPROVED"
                 topup.verified_at = datetime.now(timezone.utc)
-                topup.admin_note = (
-                    f"Auto-approved via SMS Webhook ({parsed.provider})"
-                )
+                topup.admin_note = f"Auto-approved via SMS Webhook ({parsed.provider})"
 
                 wallet = self.wallet_repo.get_by_user_id(
                     db, topup.user_id, for_update=True
@@ -157,9 +149,7 @@ class SmsReconciliationService:
                     description=f"Wallet TopUp via {parsed.provider} (TrxID: {parsed.transaction_id})",
                 )
 
-                self.sms_repo.mark_as_matched(
-                    db, sms_record, "WALLET_TOPUP", topup.id
-                )
+                self.sms_repo.mark_as_matched(db, sms_record, "WALLET_TOPUP", topup.id)
                 db.commit()
 
                 return SmsWebhookResponse(
@@ -174,9 +164,7 @@ class SmsReconciliationService:
                     message=f"Wallet top-up #{topup.id} auto-approved and balance credited",
                 )
             else:
-                topup.admin_note = (
-                    f"Amount mismatch: requested {topup.amount} BDT, received {parsed.amount} BDT"
-                )
+                topup.admin_note = f"Amount mismatch: requested {topup.amount} BDT, received {parsed.amount} BDT"
                 sms_record.status = "MISMATCH"
                 db.commit()
                 return SmsWebhookResponse(
