@@ -44,7 +44,7 @@ def test_sms_parser_rocket():
 
 
 def test_webhook_device_secret_auth(client):
-    # Missing header -> 401
+    # Missing header and secret -> 401
     res = client.post(
         "/api/v1/payments/webhook/sms",
         json={"sender": "bKash", "message": "hello"},
@@ -58,6 +58,35 @@ def test_webhook_device_secret_auth(client):
         headers={"X-Device-Secret": "invalid-secret"},
     )
     assert res.status_code == 401
+
+    # Valid secret via query parameter -> 200
+    res = client.post(
+        f"/api/v1/payments/webhook/sms?secret={settings.SMS_WEBHOOK_SECRET}",
+        json={"sender": "bKash", "message": "hello"},
+    )
+    assert res.status_code == 200
+
+
+def test_sms_forwarder_payload_aliases(client):
+    """Verify that SmsForwarder native keys (from, content, card_slot, device_mark) are accepted."""
+    sms_forwarder_payload = {
+        "from": "bKash",
+        "content": "You have received Tk 250.00 from 01700112233. Fee Tk 0.00. Balance Tk 1,500.00. TrxID TESTFWD123 at 11/09/2026 02:05",
+        "card_slot": 1,
+        "device_mark": "Xiaomi Note 10",
+        "timestamp": 1726000000,
+    }
+    res = client.post(
+        "/api/v1/payments/webhook/sms",
+        json=sms_forwarder_payload,
+        headers={"X-Device-Secret": settings.SMS_WEBHOOK_SECRET},
+    )
+    assert res.status_code == 200
+    data = res.json()["data"]
+    assert data["received"] is True
+    assert data["provider"] == "BKASH"
+    assert data["transaction_id"] == "TESTFWD123"
+    assert data["amount"] == 250.0
 
 
 def test_scenario_a_payment_first_sms_second(client, admin_auth_headers, auth_headers):

@@ -1,10 +1,11 @@
+import json
 from typing import Optional
-from fastapi import APIRouter, Depends, Header, status
+from fastapi import APIRouter, Depends, Header, Query, Request, status
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.exceptions import UnauthorizedException
+from app.core.exceptions import UnauthorizedException, ValidationException
 from app.core.security import get_current_user, require_role
 from app.models.user import User
 from app.schemas.response import StandardResponse
@@ -139,15 +140,73 @@ def admin_reject_payment(
     status_code=status.HTTP_200_OK,
     summary="Receive incoming SMS from Android listener for automatic payment verification",
 )
-def receive_sms_webhook(
-    body: SmsWebhookPayload,
+async def receive_sms_webhook(
+    request: Request,
     x_device_secret: Optional[str] = Header(None, alias="X-Device-Secret"),
+    secret: Optional[str] = Query(
+        None,
+        description="Optional secret via query param (e.g. ?secret=...) for apps like SmsForwarder",
+    ),
     db: Session = Depends(get_db),
 ):
-    if not x_device_secret or x_device_secret != settings.SMS_WEBHOOK_SECRET:
-        raise UnauthorizedException("Invalid or missing X-Device-Secret header")
+    auth_secret = x_device_secret or secret
+    if not auth_secret or auth_secret != settings.SMS_WEBHOOK_SECRET:
+        raise UnauthorizedException(
+            "Invalid or missing secret (pass 'X-Device-Secret' header or '?secret=...' query parameter)"
+        )
 
-    result = sms_service.process_incoming_sms(db, body)
+    # Resolve payload flexibly across JSON, Form-data, and raw text
+    content_type = request.headers.get("content-type", "").lower()
+    raw_data = None
+
+    if "application/json" in content_type:
+        try:
+            raw_data = await request.json()
+        except Exception:
+            pass
+
+    if raw_data is None and ("form" in content_type or "urlencoded" in content_type):
+        try:
+            form_data = await request.form()
+            if form_data:
+                raw_data = dict(form_data)
+        except Exception:
+            pass
+
+    if raw_data is None:
+        try:
+            body_bytes = await request.body()
+            if body_bytes:
+                text = body_bytes.decode("utf-8", errors="ignore").strip()
+                if text.startswith("{") and text.endswith("}"):
+                    raw_data = json.loads(text)
+                elif "=" in text:
+                    from urllib.parse import parse_qs
+
+                    parsed = parse_qs(text)
+                    if parsed:
+                        raw_data = {
+                            k: v[0] if len(v) == 1 else v for k, v in parsed.items()
+                        }
+        except Exception:
+            pass
+
+    if raw_data is None and (
+        request.query_params.get("from") or request.query_params.get("sender")
+    ):
+        raw_data = dict(request.query_params)
+
+    if not raw_data:
+        raise ValidationException(
+            "Missing SMS payload. Please send valid JSON or Form-data with sender and message."
+        )
+
+    try:
+        payload = SmsWebhookPayload.model_validate(raw_data)
+    except Exception as e:
+        raise ValidationException(f"Invalid SMS payload: {str(e)}")
+
+    result = sms_service.process_incoming_sms(db, payload)
     return {
         "success": True,
         "status_code": status.HTTP_200_OK,
