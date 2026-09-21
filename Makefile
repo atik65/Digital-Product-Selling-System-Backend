@@ -1,4 +1,4 @@
-.PHONY: help setup dev db-up db-down db-reset seed migration migrate rollback migrate-status lint format test docker-build docker-up docker-down docker-logs
+.PHONY: help setup dev db-up db-down db-reset seed migration migrate rollback migrate-status lint format test docker-build docker-up docker-down docker-logs backup backup-list backup-restore
 
 define HELP_TEXT
 Usage: make [target]
@@ -21,6 +21,9 @@ Available targets:
   lint            Run ruff linter
   format          Run ruff formatter
   test            Run unit tests with pytest
+  backup          Run database backup to Cloudflare R2
+  backup-list     List available database backups in Cloudflare R2
+  backup-restore  Restore database backup from Cloudflare R2 (Usage: make backup-restore key="backups/YYYY/MM/digital_product_selling_system_backup_YYYYMMDD_HHMMSS.sql.gz")
 endef
 
 help: ## Show this help message
@@ -85,4 +88,15 @@ test: ## Run unit tests with pytest
 
 postman: ## Generate Postman Collection v2.1.0 JSON file
 	uv run python scripts/generate_postman_collection.py
+
+backup: ## Run database backup to Cloudflare R2
+	uv run python scripts/r2_backup.py backup
+
+backup-list: ## List available database backups in Cloudflare R2
+	uv run python scripts/r2_backup.py list
+
+backup-restore: ## Restore database backup from Cloudflare R2 (Usage: make backup-restore key="path/to/file.sql.gz")
+	@if [ -z "$(key)" ]; then echo "Error: 'key' parameter is required. Usage: make backup-restore key=\"backups/YYYY/MM/...sql.gz\""; exit 1; fi
+	uv run python scripts/r2_backup.py restore $(key)
+
 

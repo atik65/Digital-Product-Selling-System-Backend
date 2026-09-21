@@ -35,6 +35,14 @@ class Settings(BaseSettings):
         "console"  # "console" for dev, "json" for structured production logs
     )
 
+    # Cloudflare R2 & Automated Database Backup
+    R2_ACCOUNT_ID: str = ""
+    R2_ACCESS_KEY_ID: str = ""
+    R2_SECRET_ACCESS_KEY: str = ""
+    R2_BUCKET_NAME: str = ""
+    BACKUP_RETENTION_DAYS: int = 30
+    BACKUP_DOCKER_CONTAINER: str = "digital-product-db"
+
     @property
     def DATABASE_URL(self) -> str:
         return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
