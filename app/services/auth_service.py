@@ -1,4 +1,5 @@
 import re
+from typing import Union
 from sqlalchemy.orm import Session
 from google.oauth2 import id_token as google_id_token
 from google.auth.transport import requests as google_requests
@@ -156,8 +157,12 @@ class AuthService:
             "user": user,
         }
 
-    def refresh_token(self, db: Session, req: RefreshTokenRequest) -> dict:
-        payload = decode_token(req.refresh_token, expected_type="refresh")
+    def refresh_token(self, db: Session, req: Union[RefreshTokenRequest, str]) -> dict:
+        token_str = req.refresh_token if isinstance(req, RefreshTokenRequest) else req
+        if not token_str:
+            raise UnauthorizedException("Refresh token was not provided")
+
+        payload = decode_token(token_str, expected_type="refresh")
         user_id = int(payload.get("sub"))
         user = self.user_repo.get_by_id(db, user_id)
         if not user or not user.is_active:

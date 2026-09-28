@@ -1,9 +1,11 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.exceptions import UnauthorizedException
 from app.core.limiter import limiter
-from app.core.security import get_current_user
+from app.core.security import get_current_user, set_auth_cookies, clear_auth_cookies
 from app.models.user import User
 from app.schemas.response import StandardResponse
 from app.schemas.user import (
@@ -36,6 +38,11 @@ def signup(
     db: Session = Depends(get_db),
 ):
     result = auth_service.signup(db, body)
+    set_auth_cookies(
+        response,
+        access_token=result["access_token"],
+        refresh_token=result["refresh_token"],
+    )
     return {
         "success": True,
         "status_code": status.HTTP_201_CREATED,
@@ -58,6 +65,11 @@ def google_login(
     db: Session = Depends(get_db),
 ):
     result = auth_service.login_with_google(db, body)
+    set_auth_cookies(
+        response,
+        access_token=result["access_token"],
+        refresh_token=result["refresh_token"],
+    )
     return {
         "success": True,
         "status_code": status.HTTP_200_OK,
@@ -80,6 +92,11 @@ def login(
     db: Session = Depends(get_db),
 ):
     result = auth_service.login(db, body)
+    set_auth_cookies(
+        response,
+        access_token=result["access_token"],
+        refresh_token=result["refresh_token"],
+    )
     return {
         "success": True,
         "status_code": status.HTTP_200_OK,
@@ -102,6 +119,11 @@ def admin_login(
     db: Session = Depends(get_db),
 ):
     result = auth_service.admin_login(db, body)
+    set_auth_cookies(
+        response,
+        access_token=result["access_token"],
+        refresh_token=result["refresh_token"],
+    )
     return {
         "success": True,
         "status_code": status.HTTP_200_OK,
@@ -120,15 +142,49 @@ def admin_login(
 def refresh_token(
     request: Request,
     response: Response,
-    body: RefreshTokenRequest,
+    body: Optional[RefreshTokenRequest] = None,
     db: Session = Depends(get_db),
 ):
-    tokens = auth_service.refresh_token(db, body)
+    # Accept refresh token from either request body or HttpOnly cookie
+    refresh_token_val = None
+    if body and body.refresh_token:
+        refresh_token_val = body.refresh_token
+    elif request.cookies.get("refresh_token"):
+        refresh_token_val = request.cookies.get("refresh_token")
+
+    if not refresh_token_val:
+        clear_auth_cookies(response)
+        raise UnauthorizedException("Refresh token was not provided.")
+
+    try:
+        tokens = auth_service.refresh_token(db, refresh_token_val)
+        set_auth_cookies(response, access_token=tokens["access_token"])
+        return {
+            "success": True,
+            "status_code": status.HTTP_200_OK,
+            "message": "Token refreshed successfully",
+            "data": tokens,
+        }
+    except Exception:
+        clear_auth_cookies(response)
+        raise
+
+
+@router.post(
+    "/logout",
+    response_model=StandardResponse[dict],
+    status_code=status.HTTP_200_OK,
+    summary="User logout and clear auth cookies",
+)
+def logout(
+    response: Response,
+):
+    clear_auth_cookies(response)
     return {
         "success": True,
         "status_code": status.HTTP_200_OK,
-        "message": "Token refreshed successfully",
-        "data": tokens,
+        "message": "Logged out successfully",
+        "data": {},
     }
 
 

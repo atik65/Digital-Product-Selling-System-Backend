@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Union
 import bcrypt
 import jwt
-from fastapi import Depends
+from fastapi import Depends, Request, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
@@ -99,22 +99,102 @@ def decode_token(token: str, expected_type: str = "access") -> dict:
 
 
 # ==========================================
-# 3. Authentication & RBAC Dependencies
+# 3. HTTP Cookie Management
+# ==========================================
+
+
+def set_auth_cookies(
+    response: Response,
+    access_token: str,
+    refresh_token: Optional[str] = None,
+) -> None:
+    """
+    Sets HTTP-Only authentication cookies (access_token, refresh_token)
+    and a client-readable status cookie (signedIn=true) on the HTTP Response.
+    """
+    access_max_age = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    refresh_max_age = settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400
+
+    # 1. HttpOnly access_token cookie
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        max_age=access_max_age,
+        expires=access_max_age,
+        path="/",
+        domain=settings.COOKIE_DOMAIN,
+        secure=settings.COOKIE_SECURE,
+        httponly=True,
+        samesite=settings.COOKIE_SAMESITE,
+    )
+
+    # 2. HttpOnly refresh_token cookie (if provided)
+    if refresh_token:
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            max_age=refresh_max_age,
+            expires=refresh_max_age,
+            path="/",
+            domain=settings.COOKIE_DOMAIN,
+            secure=settings.COOKIE_SECURE,
+            httponly=True,
+            samesite=settings.COOKIE_SAMESITE,
+        )
+
+    # 3. Client-accessible signedIn indicator cookie
+    response.set_cookie(
+        key="signedIn",
+        value="true",
+        max_age=refresh_max_age,
+        expires=refresh_max_age,
+        path="/",
+        domain=settings.COOKIE_DOMAIN,
+        secure=settings.COOKIE_SECURE,
+        httponly=False,
+        samesite=settings.COOKIE_SAMESITE,
+    )
+
+
+def clear_auth_cookies(response: Response) -> None:
+    """
+    Deletes all authentication cookies from the client browser.
+    """
+    for key in ("access_token", "refresh_token", "signedIn"):
+        response.delete_cookie(
+            key=key,
+            path="/",
+            domain=settings.COOKIE_DOMAIN,
+            secure=settings.COOKIE_SECURE,
+            httponly=True if key != "signedIn" else False,
+            samesite=settings.COOKIE_SAMESITE,
+        )
+
+
+# ==========================================
+# 4. Authentication & RBAC Dependencies
 # ==========================================
 
 
 def get_current_user(
+    request: Request,
     auth: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db),
 ) -> User:
     """
-    Dependency that extracts the Bearer token, validates it,
-    and returns the current active User model instance.
+    Dependency that extracts the Bearer token from Authorization header OR
+    HttpOnly access_token cookie, validates it, and returns the current active User model instance.
     """
-    if not auth or not auth.credentials:
+    token: Optional[str] = None
+    if auth and auth.credentials:
+        token = auth.credentials
+    elif request and request.cookies.get("access_token"):
+        token = request.cookies.get("access_token")
+
+    if not token:
         raise UnauthorizedException("Authentication credentials were not provided.")
 
-    payload = decode_token(auth.credentials, expected_type="access")
+    payload = decode_token(token, expected_type="access")
     user_id_str = payload.get("sub")
 
     if not user_id_str:

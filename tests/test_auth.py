@@ -232,3 +232,73 @@ def test_user_login_nonexistent_email(client):
     response = client.post("/api/v1/auth/login", json=payload)
     assert response.status_code == 401
     assert response.json()["success"] is False
+
+
+def test_admin_login_sets_httponly_cookies(client, admin_user):
+    """Test that admin login automatically sets HttpOnly access/refresh cookies and signedIn cookie."""
+    payload = {
+        "email": admin_user.email,
+        "password": "adminpass123",
+    }
+    response = client.post("/api/v1/auth/admin/login", json=payload)
+    assert response.status_code == 200
+
+    # Verify cookies in response
+    cookies = response.cookies
+    assert "access_token" in cookies
+    assert "refresh_token" in cookies
+    assert "signedIn" in cookies
+    assert cookies["signedIn"] == "true"
+
+
+def test_authenticated_endpoint_with_cookie_only(client, admin_user):
+    """Test accessing protected endpoint using ONLY access_token cookie without Bearer header."""
+    payload = {
+        "email": admin_user.email,
+        "password": "adminpass123",
+    }
+    login_res = client.post("/api/v1/auth/admin/login", json=payload)
+    access_token = login_res.json()["data"]["access_token"]
+
+    # Send request with Cookie header only
+    client.cookies.set("access_token", access_token)
+    response = client.get("/api/v1/auth/me")
+    assert response.status_code == 200
+    assert response.json()["data"]["email"] == admin_user.email
+    client.cookies.clear()
+
+
+def test_refresh_token_via_cookie(client, admin_user):
+    """Test refreshing token when refresh_token is sent via cookie instead of request body."""
+    login_res = client.post(
+        "/api/v1/auth/admin/login",
+        json={"email": admin_user.email, "password": "adminpass123"},
+    )
+    refresh_token = login_res.json()["data"]["refresh_token"]
+
+    # Clear access token but supply refresh token in cookie
+    client.cookies.clear()
+    client.cookies.set("refresh_token", refresh_token)
+
+    response = client.post("/api/v1/auth/refresh", json={})
+    assert response.status_code == 200
+    assert "access_token" in response.json()["data"]
+    assert "access_token" in response.cookies
+    client.cookies.clear()
+
+
+def test_logout_clears_cookies(client, admin_user):
+    """Test /api/v1/auth/logout clears auth cookies."""
+    login_res = client.post(
+        "/api/v1/auth/admin/login",
+        json={"email": admin_user.email, "password": "adminpass123"},
+    )
+    assert "access_token" in login_res.cookies
+
+    logout_res = client.post("/api/v1/auth/logout")
+    assert logout_res.status_code == 200
+    assert logout_res.json()["success"] is True
+
+    # Check cookies were deleted (empty value or expired)
+    access_cookie = logout_res.cookies.get("access_token")
+    assert access_cookie is None or access_cookie == '""' or access_cookie == ""
