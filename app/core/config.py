@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,6 +28,13 @@ class Settings(BaseSettings):
     COOKIE_SECURE: bool = False
     COOKIE_SAMESITE: str = "lax"
     COOKIE_DOMAIN: str | None = None
+
+    @field_validator("COOKIE_DOMAIN", mode="before")
+    @classmethod
+    def empty_domain_to_none(cls, v: str | None) -> str | None:
+        if v is None or (isinstance(v, str) and not v.strip()):
+            return None
+        return v
 
     # Google OAuth2
     GOOGLE_CLIENT_ID: str = ""
