@@ -1,4 +1,4 @@
-.PHONY: help setup dev db-up db-down db-reset seed migration migrate rollback migrate-status lint format test docker-build docker-up docker-down docker-logs backup backup-list backup-restore
+.PHONY: help setup dev db-up db-down db-reset seed migration migrate rollback migrate-status lint format test docker-build docker-up docker-down docker-logs docker-seed docker-migrate backup backup-list backup-restore
 
 define HELP_TEXT
 Usage: make [target]
@@ -14,6 +14,8 @@ Available targets:
   docker-up       Start entire stack (DB + API) inside Docker
   docker-down     Stop all running Docker containers
   docker-logs     Follow logs from the Dockerized API container
+  docker-seed     Run database seeder inside the running API Docker container
+  docker-migrate  Run pending alembic migrations inside the running API Docker container
   migration       Create a new migration (Usage: make migration m="description")
   migrate         Apply all pending migrations (alembic upgrade head)
   rollback        Rollback the most recent migration (downgrade -1)
@@ -64,6 +66,12 @@ docker-down: ## Stop all running Docker containers
 
 docker-logs: ## Follow logs from the Dockerized API container
 	docker compose logs -f api
+
+docker-seed: ## Run database seeder inside running Docker API container
+	docker compose exec api python scripts/seed.py
+
+docker-migrate: ## Run pending alembic migrations inside running Docker API container
+	docker compose exec api alembic upgrade head
 
 migration: ## Create a new migration (Usage: make migration m="description")
 	uv run alembic revision --autogenerate -m "$(m)"
