@@ -1321,7 +1321,9 @@ def seed_marketing_and_lottery(db) -> None:
             site_name="BoostGhor Digital",
             site_title="Fast & Secure Digital Subscriptions",
             support_phone="+8801812345678",
-            telegram_url="https://t.me/boostghordigital",
+            telegram_channel_url="https://t.me/boostghordigital",
+            telegram_support_url="https://t.me/boostghorsupport",
+            youtube_channel_url="https://youtube.com/@boostghordigital",
         )
         db.add(setting)
         db.commit()

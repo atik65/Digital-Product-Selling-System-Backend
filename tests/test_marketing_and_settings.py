@@ -12,7 +12,7 @@ def test_site_settings_flow(client, admin_auth_headers, auth_headers):
     )
     assert cust_res.status_code == 403
 
-    # 3. Admin updates site settings
+    # 3. Admin updates site settings with backward-compatible telegram_url
     admin_res = client.put(
         "/api/v1/admin/settings",
         json={
@@ -25,6 +25,32 @@ def test_site_settings_flow(client, admin_auth_headers, auth_headers):
     assert admin_res.status_code == 200
     assert admin_res.json()["data"]["site_name"] == "BoostGhor Elite"
     assert admin_res.json()["data"]["support_phone"] == "+8801999888777"
+    assert admin_res.json()["data"]["telegram_channel_url"] == "https://t.me/boostghorelite"
+    assert admin_res.json()["data"]["telegram_url"] == "https://t.me/boostghorelite"
+
+    # 4. Admin updates site settings with new channel, support, and youtube fields
+    admin_res2 = client.put(
+        "/api/v1/admin/settings",
+        json={
+            "telegram_channel_url": "https://t.me/new_channel",
+            "telegram_support_url": "https://t.me/new_support",
+            "youtube_channel_url": "https://youtube.com/@new_channel",
+        },
+        headers=admin_auth_headers,
+    )
+    assert admin_res2.status_code == 200
+    assert admin_res2.json()["data"]["telegram_channel_url"] == "https://t.me/new_channel"
+    assert admin_res2.json()["data"]["telegram_support_url"] == "https://t.me/new_support"
+    assert admin_res2.json()["data"]["youtube_channel_url"] == "https://youtube.com/@new_channel"
+    assert admin_res2.json()["data"]["telegram_url"] == "https://t.me/new_channel"
+
+    # 5. Public get site settings contains all new URL fields
+    pub_res = client.get("/api/v1/settings")
+    assert pub_res.status_code == 200
+    assert pub_res.json()["data"]["telegram_channel_url"] == "https://t.me/new_channel"
+    assert pub_res.json()["data"]["telegram_support_url"] == "https://t.me/new_support"
+    assert pub_res.json()["data"]["youtube_channel_url"] == "https://youtube.com/@new_channel"
+    assert pub_res.json()["data"]["telegram_url"] == "https://t.me/new_channel"
 
 
 def test_banners_and_popups(client, admin_auth_headers):

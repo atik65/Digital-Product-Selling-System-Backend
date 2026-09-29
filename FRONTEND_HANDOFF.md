@@ -651,7 +651,10 @@ export interface SiteSetting {
   site_title: string;
   logo?: string | null;
   favicon?: string | null;
-  telegram_url?: string | null;
+  telegram_channel_url?: string | null;
+  telegram_support_url?: string | null;
+  youtube_channel_url?: string | null;
+  telegram_url?: string | null; // Backward-compatible alias for telegram_channel_url
   facebook_url?: string | null;
   support_phone?: string | null;
   support_email?: string | null;
@@ -1176,7 +1179,7 @@ Every endpoint in the Postman collection is detailed below:
 | Method | Endpoint | Auth | Purpose | Key Params |
 | :--- | :--- | :--- | :--- | :--- |
 | `GET` | `/api/v1/settings` | Public | Get branding, support links & contacts | None |
-| `PUT` | `/api/v1/admin/settings` | Admin | Update site branding & contact lines | Body: `{ site_name?, site_title?, logo?, favicon?, telegram_url?, facebook_url?, support_phone?, support_email? }` |
+| `PUT` | `/api/v1/admin/settings` | Admin | Update site branding & contact lines | Body: `{ site_name?, site_title?, logo?, favicon?, telegram_channel_url?, telegram_support_url?, youtube_channel_url?, telegram_url?, facebook_url?, support_phone?, support_email? }` |
 
 ### 15. Media Uploads
 | Method | Endpoint | Auth | Purpose | Key Params |
