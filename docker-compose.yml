@@ -25,13 +25,18 @@ services:
     restart: always
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     environment:
-      - DB_USER=postgres
-      - DB_PASSWORD=password
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_NAME=digital_product_db
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-password}
+      - DB_HOST=${DB_HOST:-db}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME:-digital_product_db}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-636e50556f3a4eeee570894c1890bc1fe28fb5d44cc52f7e43b91cf07c985296}
+      - COOKIE_SECURE=${COOKIE_SECURE:-False}
+      - COOKIE_SAMESITE=${COOKIE_SAMESITE:-lax}
+      - COOKIE_DOMAIN=${COOKIE_DOMAIN:-}
       - PROJECT_NAME=${PROJECT_NAME:-Digital Product Selling System}
       - VERSION=${VERSION:-0.1.0}
       - DEBUG=${DEBUG:-False}
