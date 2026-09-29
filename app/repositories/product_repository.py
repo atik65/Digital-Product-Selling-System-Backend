@@ -1,4 +1,5 @@
 from typing import Optional
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 from app.models.product import Product
 from app.models.category import Category
@@ -30,8 +31,17 @@ class ProductRepository:
 
             if filters.is_active is not None:
                 query = query.filter(Product.is_active == filters.is_active)
+            if filters.search:
+                term = f"%{filters.search.strip()}%"
+                query = query.filter(
+                    or_(
+                        Product.name.ilike(term),
+                        Product.slug.ilike(term),
+                        Product.description.ilike(term),
+                    )
+                )
             if filters.name:
-                query = query.filter(Product.name.ilike(f"%{filters.name}%"))
+                query = query.filter(Product.name.ilike(f"%{filters.name.strip()}%"))
             if filters.category_id:
                 query = query.filter(Product.category_id == filters.category_id)
             if filters.category_slug:
@@ -54,6 +64,16 @@ class ProductRepository:
             raise DatabaseException(
                 f"Failed to fetch products: {str(e)}", original_exception=e
             )
+
+    def search_products(
+        self,
+        db: Session,
+        search_term: str,
+        pagination: PaginationParams,
+        is_active: Optional[bool] = True,
+    ):
+        filters = ProductFilters(search=search_term, is_active=is_active)
+        return self.get_products(db, pagination, filters)
 
     def get_by_id(
         self, db: Session, product_id: int, include_deleted: bool = False

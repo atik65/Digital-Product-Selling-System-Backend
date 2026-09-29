@@ -1,3 +1,4 @@
+from typing import Optional
 from sqlalchemy.orm import Session
 from app.repositories.product_repository import ProductRepository
 from app.models.product import Product
@@ -19,6 +20,19 @@ class ProductService:
         self, db: Session, pagination: PaginationParams, filters: ProductFilters
     ):
         return self.repo.get_products(db, pagination, filters)
+
+    def search_products(
+        self,
+        db: Session,
+        search_term: str,
+        pagination: Optional[PaginationParams] = None,
+        is_active: Optional[bool] = True,
+    ):
+        if pagination is None:
+            pagination = PaginationParams(page=1, size=20)
+        return self.repo.search_products(
+            db, search_term, pagination, is_active=is_active
+        )
 
     def get_product_by_slug(self, db: Session, slug: str) -> Product:
         product = self.repo.get_by_slug(db, slug)

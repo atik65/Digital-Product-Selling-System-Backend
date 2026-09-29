@@ -129,3 +129,46 @@ def test_admin_delete_product(client, admin_auth_headers):
     # Verify not found in public query
     get_res = client.get("/api/v1/products/to-delete")
     assert get_res.status_code == 404
+
+
+def test_search_products(client, admin_auth_headers):
+    """Test searching products by name, slug, or description."""
+    client.post(
+        "/api/v1/admin/products",
+        json={
+            "name": "Crunchyroll Mega Fan",
+            "slug": "crunchyroll-mega-fan",
+            "description": "Stream anime in HD with no ads",
+            "is_active": True,
+        },
+        headers=admin_auth_headers,
+    )
+    client.post(
+        "/api/v1/admin/products",
+        json={
+            "name": "ChatGPT Plus Subscription",
+            "slug": "chatgpt-plus-subscription",
+            "description": "OpenAI GPT-4o access",
+            "is_active": True,
+        },
+        headers=admin_auth_headers,
+    )
+
+    # 1. Search by name keyword
+    res1 = client.get("/api/v1/products?search=crunchyroll")
+    assert res1.status_code == 200
+    items1 = res1.json()["data"]["items"]
+    assert any(p["slug"] == "crunchyroll-mega-fan" for p in items1)
+    assert not any(p["slug"] == "chatgpt-plus-subscription" for p in items1)
+
+    # 2. Search by description keyword
+    res2 = client.get("/api/v1/products?search=OpenAI")
+    assert res2.status_code == 200
+    items2 = res2.json()["data"]["items"]
+    assert any(p["slug"] == "chatgpt-plus-subscription" for p in items2)
+    assert not any(p["slug"] == "crunchyroll-mega-fan" for p in items2)
+
+    # 3. Search with no matches
+    res3 = client.get("/api/v1/products?search=NonExistentMatchXYZ")
+    assert res3.status_code == 200
+    assert len(res3.json()["data"]["items"]) == 0

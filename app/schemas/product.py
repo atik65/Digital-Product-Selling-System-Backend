@@ -54,6 +54,7 @@ class ProductDetailResponse(ProductCardResponse):
 
 class ProductFilters(BaseModel):
     name: Optional[str] = None
+    search: Optional[str] = None
     category_id: Optional[int] = None
     category_slug: Optional[str] = None
     is_active: Optional[bool] = None
