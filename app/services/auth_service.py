@@ -46,7 +46,7 @@ class AuthService:
             # If GOOGLE_CLIENT_ID is configured, verify against it; otherwise verify signature
             client_id = settings.GOOGLE_CLIENT_ID if settings.GOOGLE_CLIENT_ID else None
             id_info = google_id_token.verify_oauth2_token(
-                req.id_token, google_requests.Request(), client_id
+                req.id_token, google_requests.Request(), client_id, clock_skew_in_seconds=10
             )
         except Exception as e:
             raise UnauthorizedException(f"Invalid Google token: {str(e)}")

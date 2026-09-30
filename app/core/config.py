@@ -29,6 +29,42 @@ class Settings(BaseSettings):
     COOKIE_SAMESITE: str = "lax"
     COOKIE_DOMAIN: str | None = None
 
+    @field_validator("REFRESH_TOKEN_EXPIRE_DAYS", mode="before")
+    @classmethod
+    def validate_refresh_days(cls, v: object) -> int:
+        if v is None:
+            return 7
+        try:
+            val = int(v)
+        except (ValueError, TypeError):
+            return 7
+        # Convert milliseconds if given (e.g. 2,592,000,000 for 30 days)
+        if val > 86400000:
+            val = val // (86400 * 1000)
+        # Convert seconds if given (e.g. 2,592,000 for 30 days)
+        elif val > 3650:
+            val = val // 86400
+        # Cap to safe range: 1 to 365 days
+        return max(1, min(val, 365))
+
+    @field_validator("ACCESS_TOKEN_EXPIRE_MINUTES", mode="before")
+    @classmethod
+    def validate_access_minutes(cls, v: object) -> int:
+        if v is None:
+            return 30
+        try:
+            val = int(v)
+        except (ValueError, TypeError):
+            return 30
+        # Convert milliseconds if given (e.g. 3,600,000 for 60 min)
+        if val > 3600000:
+            val = val // (60 * 1000)
+        # Convert seconds if given (e.g. 3600 for 60 min)
+        elif val > 10080:
+            val = val // 60
+        # Cap to safe range: 1 minute to 43,200 minutes (30 days)
+        return max(1, min(val, 43200))
+
     @field_validator("COOKIE_DOMAIN", mode="before")
     @classmethod
     def empty_domain_to_none(cls, v: str | None) -> str | None:

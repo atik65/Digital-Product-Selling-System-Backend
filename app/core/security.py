@@ -114,13 +114,16 @@ def set_auth_cookies(
     """
     access_max_age = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
     refresh_max_age = settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400
+    now = datetime.now(timezone.utc)
+    access_expires = now + timedelta(seconds=access_max_age)
+    refresh_expires = now + timedelta(seconds=refresh_max_age)
 
     # 1. HttpOnly access_token cookie
     response.set_cookie(
         key="access_token",
         value=access_token,
         max_age=access_max_age,
-        expires=access_max_age,
+        expires=access_expires,
         path="/",
         domain=settings.COOKIE_DOMAIN,
         secure=settings.COOKIE_SECURE,
@@ -134,7 +137,7 @@ def set_auth_cookies(
             key="refresh_token",
             value=refresh_token,
             max_age=refresh_max_age,
-            expires=refresh_max_age,
+            expires=refresh_expires,
             path="/",
             domain=settings.COOKIE_DOMAIN,
             secure=settings.COOKIE_SECURE,
@@ -147,7 +150,7 @@ def set_auth_cookies(
         key="signedIn",
         value="true",
         max_age=refresh_max_age,
-        expires=refresh_max_age,
+        expires=refresh_expires,
         path="/",
         domain=settings.COOKIE_DOMAIN,
         secure=settings.COOKIE_SECURE,
