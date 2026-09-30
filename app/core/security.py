@@ -188,34 +188,43 @@ def get_current_user(
     Dependency that extracts the Bearer token from Authorization header OR
     HttpOnly access_token cookie, validates it, and returns the current active User model instance.
     """
-    token: Optional[str] = None
+    candidates = []
     if auth and auth.credentials:
-        token = auth.credentials
-    elif request and request.cookies.get("access_token"):
-        token = request.cookies.get("access_token")
+        candidates.append(auth.credentials)
+    if request and request.cookies.get("access_token"):
+        cookie_tok = request.cookies.get("access_token")
+        if cookie_tok not in candidates:
+            candidates.append(cookie_tok)
 
-    if not token:
+    if not candidates:
         raise UnauthorizedException("Authentication credentials were not provided.")
 
-    payload = decode_token(token, expected_type="access")
-    user_id_str = payload.get("sub")
+    last_error = None
+    for token in candidates:
+        try:
+            payload = decode_token(token, expected_type="access")
+            user_id_str = payload.get("sub")
+            if not user_id_str:
+                raise UnauthorizedException("Malformed token: missing subject identifier.")
 
-    if not user_id_str:
-        raise UnauthorizedException("Malformed token: missing subject identifier.")
+            try:
+                user_id = int(user_id_str)
+            except ValueError:
+                raise UnauthorizedException("Malformed token: invalid subject identifier.")
 
-    try:
-        user_id = int(user_id_str)
-    except ValueError:
-        raise UnauthorizedException("Malformed token: invalid subject identifier.")
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user or user.is_deleted:
+                raise UnauthorizedException("User associated with this token no longer exists.")
 
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user or user.is_deleted:
-        raise UnauthorizedException("User associated with this token no longer exists.")
+            if not user.is_active:
+                raise ForbiddenException("User account is inactive.")
 
-    if not user.is_active:
-        raise ForbiddenException("User account is inactive.")
+            return user
+        except UnauthorizedException as e:
+            last_error = e
+            continue
 
-    return user
+    raise last_error or UnauthorizedException("Authentication credentials were not provided.")
 
 
 def require_role(allowed_roles: Union[str, List[str]]):
