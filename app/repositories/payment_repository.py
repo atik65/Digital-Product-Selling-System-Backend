@@ -2,6 +2,7 @@ from typing import Optional
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 from app.models.payment import Payment
+from app.models.user import User
 from app.schemas.pagination import PaginationParams
 from app.utils.pagination import get_paginated_response
 from app.core.exceptions import DatabaseException
@@ -33,7 +34,11 @@ class PaymentRepository:
     def get_by_id(self, db: Session, payment_id: int) -> Optional[Payment]:
         return (
             db.query(Payment)
-            .options(joinedload(Payment.payment_method), joinedload(Payment.order))
+            .options(
+                joinedload(Payment.payment_method),
+                joinedload(Payment.order),
+                joinedload(Payment.user).joinedload(User.wallet),
+            )
             .filter(Payment.id == payment_id, Payment.is_deleted.is_(False))
             .first()
         )
@@ -56,7 +61,7 @@ class PaymentRepository:
                 .options(
                     joinedload(Payment.payment_method),
                     joinedload(Payment.order),
-                    joinedload(Payment.user),
+                    joinedload(Payment.user).joinedload(User.wallet),
                 )
                 .filter(Payment.is_deleted.is_(False))
             )

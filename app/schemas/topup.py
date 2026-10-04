@@ -2,6 +2,7 @@ from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from app.schemas.payment_method import PaymentMethodResponse
+from app.schemas.user_brief import UserBriefResponse
 
 
 class TopUpCreateRequest(BaseModel):
@@ -29,5 +30,6 @@ class TopUpResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     payment_method: Optional[PaymentMethodResponse] = None
+    user: Optional[UserBriefResponse] = None
 
     model_config = ConfigDict(from_attributes=True)

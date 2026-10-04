@@ -37,7 +37,11 @@ def test_topup_submission_and_admin_approval(client, admin_auth_headers, auth_he
     # 4. Admin lists topups
     admin_topups = client.get("/api/v1/admin/topups", headers=admin_auth_headers)
     assert admin_topups.status_code == 200
-    assert any(t["id"] == topup_id for t in admin_topups.json()["data"]["items"])
+    target_topup = next(t for t in admin_topups.json()["data"]["items"] if t["id"] == topup_id)
+    assert target_topup["user"] is not None
+    assert target_topup["user"]["email"] == "testuser@example.com"
+    assert target_topup["user"]["username"] == "testuser"
+    assert "wallet_balance" in target_topup["user"]
 
     # 5. Admin approves top-up
     appr_res = client.post(

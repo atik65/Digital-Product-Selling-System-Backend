@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 from app.models.topup import TopUp
+from app.models.user import User
 from app.schemas.pagination import PaginationParams
 from app.utils.pagination import get_paginated_response
 from app.core.exceptions import DatabaseException
@@ -34,7 +35,10 @@ class TopUpRepository:
     def get_by_id(self, db: Session, topup_id: int) -> Optional[TopUp]:
         return (
             db.query(TopUp)
-            .options(joinedload(TopUp.payment_method), joinedload(TopUp.user))
+            .options(
+                joinedload(TopUp.payment_method),
+                joinedload(TopUp.user).joinedload(User.wallet),
+            )
             .filter(TopUp.id == topup_id, TopUp.is_deleted.is_(False))
             .first()
         )
@@ -42,7 +46,10 @@ class TopUpRepository:
     def get_user_topups(self, db: Session, user_id: int) -> List[TopUp]:
         return (
             db.query(TopUp)
-            .options(joinedload(TopUp.payment_method))
+            .options(
+                joinedload(TopUp.payment_method),
+                joinedload(TopUp.user).joinedload(User.wallet),
+            )
             .filter(TopUp.user_id == user_id, TopUp.is_deleted.is_(False))
             .order_by(TopUp.id.desc())
             .all()
@@ -54,7 +61,10 @@ class TopUpRepository:
         try:
             query = (
                 db.query(TopUp)
-                .options(joinedload(TopUp.payment_method), joinedload(TopUp.user))
+                .options(
+                    joinedload(TopUp.payment_method),
+                    joinedload(TopUp.user).joinedload(User.wallet),
+                )
                 .filter(TopUp.is_deleted.is_(False))
             )
             if status:
