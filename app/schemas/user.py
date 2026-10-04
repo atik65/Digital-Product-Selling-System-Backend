@@ -1,6 +1,9 @@
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict, model_validator
+from app.schemas.wallet import WalletResponse
+from app.schemas.order import OrderResponse
+from app.schemas.topup import TopUpResponse
 
 
 class UserBase(BaseModel):
@@ -29,10 +32,32 @@ class UserResponse(UserBase):
     id: int
     role: str
     is_active: bool
+    wallet_balance: float = 0.0
     created_at: datetime
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserDetailResponse(UserResponse):
+    wallet: Optional[WalletResponse] = None
+    orders: List[OrderResponse] = []
+    topups: List[TopUpResponse] = []
+    total_orders: int = 0
+    total_spent: float = 0.0
+
+    @model_validator(mode="after")
+    def calculate_totals(self) -> "UserDetailResponse":
+        self.total_orders = len(self.orders)
+        self.total_spent = round(
+            sum(
+                o.total_amount
+                for o in self.orders
+                if o.status in ["PAID", "PROCESSING", "COMPLETED"]
+            ),
+            2,
+        )
+        return self
 
 
 class GoogleLoginRequest(BaseModel):

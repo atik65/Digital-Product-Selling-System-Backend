@@ -21,13 +21,23 @@ class User(BaseAuditModel):
     wallet = relationship(
         "Wallet", back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
-    orders = relationship("Order", back_populates="user", cascade="all, delete-orphan")
+    orders = relationship(
+        "Order",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        order_by="desc(Order.id)",
+    )
     topups = relationship(
         "TopUp",
         foreign_keys="TopUp.user_id",
         back_populates="user",
         cascade="all, delete-orphan",
+        order_by="desc(TopUp.id)",
     )
+
+    @property
+    def wallet_balance(self) -> float:
+        return float(self.wallet.balance) if self.wallet else 0.0
     payments = relationship(
         "Payment",
         foreign_keys="Payment.user_id",

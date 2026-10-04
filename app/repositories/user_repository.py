@@ -1,6 +1,8 @@
 from typing import Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 from app.models.user import User
+from app.models.order import Order
+from app.models.topup import TopUp
 from app.schemas.pagination import PaginationParams
 from app.utils.pagination import get_paginated_response
 from app.core.exceptions import DatabaseException
@@ -10,7 +12,15 @@ class UserRepository:
     def get_by_id(
         self, db: Session, user_id: int, include_deleted: bool = False
     ) -> Optional[User]:
-        query = db.query(User).filter(User.id == user_id)
+        query = (
+            db.query(User)
+            .options(
+                joinedload(User.wallet),
+                selectinload(User.orders).selectinload(Order.items),
+                selectinload(User.topups).joinedload(TopUp.payment_method),
+            )
+            .filter(User.id == user_id)
+        )
         if not include_deleted:
             query = query.filter(User.is_deleted.is_(False))
         return query.first()
@@ -154,7 +164,12 @@ class UserRepository:
 
             total = query.count()
             items = (
-                query.order_by(User.id.desc())
+                query.options(
+                    joinedload(User.wallet),
+                    selectinload(User.orders).selectinload(Order.items),
+                    selectinload(User.topups).joinedload(TopUp.payment_method),
+                )
+                .order_by(User.id.desc())
                 .offset(pagination.offset)
                 .limit(pagination.size)
                 .all()

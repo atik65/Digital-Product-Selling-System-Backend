@@ -7,7 +7,7 @@ from app.core.security import require_role
 from app.models.user import User
 from app.schemas.response import StandardResponse
 from app.schemas.pagination import PaginationParams, PaginatedData
-from app.schemas.user import UserResponse, UserStatusUpdate
+from app.schemas.user import UserResponse, UserDetailResponse, UserStatusUpdate
 from app.repositories.user_repository import UserRepository
 from app.core.exceptions import NotFoundException
 
@@ -17,7 +17,7 @@ user_repo = UserRepository()
 
 @router.get(
     "",
-    response_model=StandardResponse[PaginatedData[UserResponse]],
+    response_model=StandardResponse[PaginatedData[UserDetailResponse]],
     status_code=status.HTTP_200_OK,
     summary="List all users with search and pagination",
 )
@@ -39,7 +39,7 @@ def list_users(
 
 @router.get(
     "/{user_id}",
-    response_model=StandardResponse[UserResponse],
+    response_model=StandardResponse[UserDetailResponse],
     status_code=status.HTTP_200_OK,
     summary="Get user details by ID",
 )
