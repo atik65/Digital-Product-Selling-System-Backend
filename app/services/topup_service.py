@@ -1,6 +1,7 @@
 from typing import List
 from sqlalchemy.orm import Session
 from app.repositories.topup_repository import TopUpRepository
+from app.repositories.payment_repository import PaymentRepository
 from app.repositories.wallet_repository import WalletRepository
 from app.repositories.payment_method_repository import PaymentMethodRepository
 from app.models.topup import TopUp
@@ -12,6 +13,7 @@ from app.core.exceptions import NotFoundException, ValidationException
 class TopUpService:
     def __init__(self):
         self.topup_repo = TopUpRepository()
+        self.payment_repo = PaymentRepository()
         self.wallet_repo = WalletRepository()
         self.method_repo = PaymentMethodRepository()
 
@@ -25,12 +27,23 @@ class TopUpService:
         if not method or not method.is_active:
             raise NotFoundException("Invalid or inactive payment method")
 
+        trx_id = req.transaction_id.strip()
+        if not trx_id:
+            raise ValidationException("Transaction ID cannot be empty")
+
+        if self.topup_repo.exists_by_transaction_id(
+            db, trx_id
+        ) or self.payment_repo.exists_by_transaction_id(db, trx_id):
+            raise ValidationException(
+                "This transaction ID has already been submitted for a top-up or payment request"
+            )
+
         data = {
             "user_id": user_id,
             "payment_method_id": method.id,
             "amount": req.amount,
-            "transaction_id": req.transaction_id.strip(),
-            "sender_number": req.sender_number.strip() if  req.sender_number else None,
+            "transaction_id": trx_id,
+            "sender_number": req.sender_number.strip() if req.sender_number else None,
             "status": "PENDING",
         }
         topup = self.topup_repo.create(db, data)

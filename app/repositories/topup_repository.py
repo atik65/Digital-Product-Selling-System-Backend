@@ -1,5 +1,6 @@
 from typing import Optional, List
 from datetime import datetime, timezone
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 from app.models.topup import TopUp
 from app.schemas.pagination import PaginationParams
@@ -8,6 +9,15 @@ from app.core.exceptions import DatabaseException
 
 
 class TopUpRepository:
+    def exists_by_transaction_id(
+        self, db: Session, transaction_id: str, include_deleted: bool = True
+    ) -> bool:
+        query = db.query(TopUp.id).filter(
+            func.upper(TopUp.transaction_id) == transaction_id.strip().upper()
+        )
+        if not include_deleted:
+            query = query.filter(TopUp.is_deleted.is_(False))
+        return query.first() is not None
     def create(self, db: Session, data: dict) -> TopUp:
         topup = TopUp(**data)
         try:

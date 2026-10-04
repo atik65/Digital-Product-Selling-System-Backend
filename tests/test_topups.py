@@ -126,3 +126,17 @@ def test_topup_submission_without_sender_number(client, admin_auth_headers, auth
     assert topup_data["status"] == "PENDING"
     assert topup_data["amount"] == 300.0
 
+    # 3. Submitting the exact same transaction ID again must be rejected (regardless of case)
+    dup_res = client.post(
+        "/api/v1/wallet/topup",
+        json={
+            "payment_method_id": pm_id,
+            "amount": 300.0,
+            "transaction_id": "trx_without_sender_001",
+        },
+        headers=auth_headers,
+    )
+    assert dup_res.status_code == 400
+    assert "already been submitted" in dup_res.json()["message"]
+
+

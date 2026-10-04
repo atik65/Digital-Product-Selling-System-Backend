@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from app.repositories.payment_repository import PaymentRepository
+from app.repositories.topup_repository import TopUpRepository
 from app.repositories.order_repository import OrderRepository
 from app.repositories.payment_method_repository import PaymentMethodRepository
 from app.models.payment import Payment
@@ -19,6 +20,7 @@ from app.core.exceptions import (
 class PaymentService:
     def __init__(self):
         self.payment_repo = PaymentRepository()
+        self.topup_repo = TopUpRepository()
         self.order_repo = OrderRepository()
         self.method_repo = PaymentMethodRepository()
 
@@ -41,12 +43,23 @@ class PaymentService:
         if not method or not method.is_active:
             raise NotFoundException("Selected payment method is invalid or inactive")
 
+        trx_id = req.transaction_id.strip()
+        if not trx_id:
+            raise ValidationException("Transaction ID cannot be empty")
+
+        if self.payment_repo.exists_by_transaction_id(
+            db, trx_id
+        ) or self.topup_repo.exists_by_transaction_id(db, trx_id):
+            raise ValidationException(
+                "This transaction ID has already been submitted for a top-up or payment request"
+            )
+
         payment_data = {
             "order_id": order.id,
             "user_id": user_id,
             "payment_method_id": method.id,
             "amount": req.amount,
-            "transaction_id": req.transaction_id.strip() ,
+            "transaction_id": trx_id,
             "sender_number": req.sender_number.strip() if req.sender_number else None,
             "status": "VERIFYING",
         }

@@ -1,4 +1,5 @@
 from typing import Optional
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 from app.models.payment import Payment
 from app.schemas.pagination import PaginationParams
@@ -7,6 +8,15 @@ from app.core.exceptions import DatabaseException
 
 
 class PaymentRepository:
+    def exists_by_transaction_id(
+        self, db: Session, transaction_id: str, include_deleted: bool = True
+    ) -> bool:
+        query = db.query(Payment.id).filter(
+            func.upper(Payment.transaction_id) == transaction_id.strip().upper()
+        )
+        if not include_deleted:
+            query = query.filter(Payment.is_deleted.is_(False))
+        return query.first() is not None
     def create(self, db: Session, data: dict) -> Payment:
         payment = Payment(**data)
         try:
