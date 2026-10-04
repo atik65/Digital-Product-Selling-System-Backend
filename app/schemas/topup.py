@@ -8,7 +8,7 @@ class TopUpCreateRequest(BaseModel):
     payment_method_id: int
     amount: float
     transaction_id: str
-    sender_number: str
+    sender_number: Optional[str] = None
 
 
 class TopUpReviewRequest(BaseModel):
@@ -21,7 +21,7 @@ class TopUpResponse(BaseModel):
     payment_method_id: int
     amount: float
     transaction_id: str
-    sender_number: str
+    sender_number: Optional[str] = None
     status: str
     admin_note: Optional[str] = None
     verified_by: Optional[int] = None

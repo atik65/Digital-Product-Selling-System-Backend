@@ -19,7 +19,7 @@ class TopUp(BaseAuditModel):
 
     amount = Column(Float, nullable=False)
     transaction_id = Column(String, nullable=False, index=True)
-    sender_number = Column(String, nullable=False)
+    sender_number = Column(String, nullable=True)
     status = Column(
         String, default="PENDING", nullable=False, index=True
     )  # PENDING, APPROVED, REJECTED

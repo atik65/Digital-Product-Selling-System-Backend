@@ -9,7 +9,7 @@ class PaymentSubmitRequest(BaseModel):
     payment_method_id: int
     amount: float
     transaction_id: str
-    sender_number: str
+    sender_number: Optional[str] = None
 
 
 class PaymentVerifyRequest(BaseModel):
@@ -27,7 +27,7 @@ class PaymentResponse(BaseModel):
     payment_method_id: int
     amount: float
     transaction_id: str
-    sender_number: str
+    sender_number: Optional[str] = None
     status: str
     verified_by: Optional[int] = None
     verified_at: Optional[datetime] = None

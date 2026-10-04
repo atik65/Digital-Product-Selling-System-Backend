@@ -30,7 +30,7 @@ class TopUpService:
             "payment_method_id": method.id,
             "amount": req.amount,
             "transaction_id": req.transaction_id.strip(),
-            "sender_number": req.sender_number.strip(),
+            "sender_number": req.sender_number.strip() if  req.sender_number else None,
             "status": "PENDING",
         }
         topup = self.topup_repo.create(db, data)

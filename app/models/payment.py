@@ -22,7 +22,7 @@ class Payment(BaseAuditModel):
 
     amount = Column(Float, nullable=False)
     transaction_id = Column(String, nullable=False, index=True)
-    sender_number = Column(String, nullable=False)
+    sender_number = Column(String, nullable=True)
     status = Column(
         String, default="VERIFYING", nullable=False, index=True
     )  # PENDING, VERIFYING, VERIFIED, REJECTED, EXPIRED

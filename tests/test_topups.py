@@ -99,3 +99,30 @@ def test_topup_rejection(client, admin_auth_headers, auth_headers):
         "balance"
     ]
     assert after_w == init_w
+
+
+def test_topup_submission_without_sender_number(client, admin_auth_headers, auth_headers):
+    # 1. Create payment method
+    pm_res = client.post(
+        "/api/v1/admin/payment-methods",
+        json={"name": "bKash Trx Only", "account_number": "01700000000"},
+        headers=admin_auth_headers,
+    )
+    pm_id = pm_res.json()["data"]["id"]
+
+    # 2. Customer submits top-up without sender_number
+    topup_res = client.post(
+        "/api/v1/wallet/topup",
+        json={
+            "payment_method_id": pm_id,
+            "amount": 300.0,
+            "transaction_id": "TRX_WITHOUT_SENDER_001",
+        },
+        headers=auth_headers,
+    )
+    assert topup_res.status_code == 201
+    topup_data = topup_res.json()["data"]
+    assert topup_data["sender_number"] is None
+    assert topup_data["status"] == "PENDING"
+    assert topup_data["amount"] == 300.0
+

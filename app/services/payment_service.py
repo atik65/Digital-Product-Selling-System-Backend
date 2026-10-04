@@ -46,8 +46,8 @@ class PaymentService:
             "user_id": user_id,
             "payment_method_id": method.id,
             "amount": req.amount,
-            "transaction_id": req.transaction_id.strip(),
-            "sender_number": req.sender_number.strip(),
+            "transaction_id": req.transaction_id.strip() ,
+            "sender_number": req.sender_number.strip() if req.sender_number else None,
             "status": "VERIFYING",
         }
         payment = self.payment_repo.create(db, payment_data)
