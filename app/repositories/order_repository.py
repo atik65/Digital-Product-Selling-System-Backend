@@ -2,6 +2,7 @@ from typing import Optional
 from sqlalchemy.orm import Session, joinedload
 from app.models.order import Order
 from app.models.order_item import OrderItem
+from app.models.user import User
 from app.schemas.pagination import PaginationParams
 from app.utils.pagination import get_paginated_response
 from app.core.exceptions import DatabaseException
@@ -30,7 +31,11 @@ class OrderRepository:
     def get_by_id(self, db: Session, order_id: int) -> Optional[Order]:
         return (
             db.query(Order)
-            .options(joinedload(Order.items), joinedload(Order.payments))
+            .options(
+                joinedload(Order.items),
+                joinedload(Order.payments),
+                joinedload(Order.user).joinedload(User.wallet),
+            )
             .filter(Order.id == order_id, Order.is_deleted.is_(False))
             .first()
         )
@@ -38,7 +43,11 @@ class OrderRepository:
     def get_by_order_number(self, db: Session, order_number: str) -> Optional[Order]:
         return (
             db.query(Order)
-            .options(joinedload(Order.items), joinedload(Order.payments))
+            .options(
+                joinedload(Order.items),
+                joinedload(Order.payments),
+                joinedload(Order.user).joinedload(User.wallet),
+            )
             .filter(Order.order_number == order_number, Order.is_deleted.is_(False))
             .first()
         )
@@ -82,13 +91,23 @@ class OrderRepository:
         try:
             query = (
                 db.query(Order)
-                .options(joinedload(Order.items), joinedload(Order.user))
+                .options(
+                    joinedload(Order.items),
+                    joinedload(Order.user).joinedload(User.wallet),
+                )
                 .filter(Order.is_deleted.is_(False))
             )
             if status:
                 query = query.filter(Order.status == status)
             if search:
-                query = query.filter(Order.order_number.ilike(f"%{search}%"))
+                term = f"%{search.strip()}%"
+                query = query.outerjoin(Order.user).filter(
+                    (Order.order_number.ilike(term))
+                    | (User.email.ilike(term))
+                    | (User.name.ilike(term))
+                    | (User.username.ilike(term))
+                    | (User.phone.ilike(term))
+                )
 
             total = query.count()
             items = (

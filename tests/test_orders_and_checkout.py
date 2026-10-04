@@ -115,9 +115,14 @@ def test_checkout_preview_and_direct_order(client, admin_auth_headers, auth_head
     assert single_res.status_code == 200
     assert single_res.json()["data"]["order_number"] == order_number
 
-    # 6. Admin can see order and update status
+    # 6. Admin can see order with customer basic info and update status
     admin_list = client.get("/api/v1/admin/orders", headers=admin_auth_headers)
     assert admin_list.status_code == 200
+    first_order = admin_list.json()["data"]["items"][0]
+    assert first_order["user"] is not None
+    assert first_order["user"]["email"] == "testuser@example.com"
+    assert first_order["user"]["username"] == "testuser"
+    assert "wallet_balance" in first_order["user"]
     order_id = order_data["id"]
 
     status_res = client.patch(
