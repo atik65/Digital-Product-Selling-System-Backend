@@ -4,6 +4,10 @@ from app.models.payment_method import PaymentMethod
 from app.core.exceptions import DatabaseException
 
 
+# Fields an admin may explicitly reset to NULL (all others ignore null values)
+CLEARABLE_FIELDS = {"daily_transaction_limit", "monthly_transaction_limit"}
+
+
 class PaymentMethodRepository:
     def get_all(self, db: Session, active_only: bool = True) -> List[PaymentMethod]:
         query = db.query(PaymentMethod).filter(PaymentMethod.is_deleted.is_(False))
@@ -36,7 +40,7 @@ class PaymentMethodRepository:
     def update(self, db: Session, method: PaymentMethod, data: dict) -> PaymentMethod:
         try:
             for key, val in data.items():
-                if val is not None and hasattr(method, key):
+                if hasattr(method, key) and (val is not None or key in CLEARABLE_FIELDS):
                     setattr(method, key, val)
             db.commit()
             db.refresh(method)

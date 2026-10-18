@@ -1,6 +1,6 @@
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class PaymentMethodBase(BaseModel):
@@ -13,7 +13,8 @@ class PaymentMethodBase(BaseModel):
 
 
 class PaymentMethodCreate(PaymentMethodBase):
-    pass
+    daily_transaction_limit: Optional[int] = Field(None, ge=1)
+    monthly_transaction_limit: Optional[int] = Field(None, ge=1)
 
 
 class PaymentMethodUpdate(BaseModel):
@@ -23,6 +24,9 @@ class PaymentMethodUpdate(BaseModel):
     logo: Optional[str] = None
     is_active: Optional[bool] = None
     sort_order: Optional[int] = None
+    # Send null explicitly to remove a limit.
+    daily_transaction_limit: Optional[int] = Field(None, ge=1)
+    monthly_transaction_limit: Optional[int] = Field(None, ge=1)
 
 
 class PaymentMethodResponse(PaymentMethodBase):
@@ -31,3 +35,16 @@ class PaymentMethodResponse(PaymentMethodBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PaymentMethodAdminResponse(PaymentMethodResponse):
+    """Admin view: includes transaction limits and current usage counters."""
+
+    daily_transaction_limit: Optional[int] = None
+    monthly_transaction_limit: Optional[int] = None
+    # Successful transactions today / since the 1st of this month (Bangladesh time)
+    daily_transaction_count: int = 0
+    monthly_transaction_count: int = 0
+    # limit - count (never below 0); None when no limit is set
+    daily_remaining: Optional[int] = None
+    monthly_remaining: Optional[int] = None

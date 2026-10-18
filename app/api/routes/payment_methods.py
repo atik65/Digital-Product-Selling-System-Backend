@@ -7,6 +7,7 @@ from app.core.security import require_role
 from app.models.user import User
 from app.schemas.response import StandardResponse
 from app.schemas.payment_method import (
+    PaymentMethodAdminResponse,
     PaymentMethodResponse,
     PaymentMethodCreate,
     PaymentMethodUpdate,
@@ -35,9 +36,9 @@ def get_payment_methods(db: Session = Depends(get_db)):
 
 @router.get(
     "/admin/payment-methods",
-    response_model=StandardResponse[List[PaymentMethodResponse]],
+    response_model=StandardResponse[List[PaymentMethodAdminResponse]],
     status_code=status.HTTP_200_OK,
-    summary="List all payment methods for admin",
+    summary="List all payment methods for admin (with transaction limits and usage)",
 )
 def admin_get_payment_methods(
     current_admin: User = Depends(require_role("admin")),
@@ -48,13 +49,13 @@ def admin_get_payment_methods(
         "success": True,
         "status_code": status.HTTP_200_OK,
         "message": "All payment methods retrieved successfully",
-        "data": methods,
+        "data": service.with_usage(db, methods),
     }
 
 
 @router.post(
     "/admin/payment-methods",
-    response_model=StandardResponse[PaymentMethodResponse],
+    response_model=StandardResponse[PaymentMethodAdminResponse],
     status_code=status.HTTP_201_CREATED,
     summary="Create payment method channel",
 )
@@ -68,15 +69,15 @@ def create_payment_method(
         "success": True,
         "status_code": status.HTTP_201_CREATED,
         "message": "Payment method created successfully",
-        "data": method,
+        "data": service.with_usage_single(db, method),
     }
 
 
 @router.put(
     "/admin/payment-methods/{method_id}",
-    response_model=StandardResponse[PaymentMethodResponse],
+    response_model=StandardResponse[PaymentMethodAdminResponse],
     status_code=status.HTTP_200_OK,
-    summary="Update payment method channel",
+    summary="Update payment method channel (send null to remove a transaction limit)",
 )
 def update_payment_method(
     method_id: int,
@@ -89,7 +90,7 @@ def update_payment_method(
         "success": True,
         "status_code": status.HTTP_200_OK,
         "message": "Payment method updated successfully",
-        "data": method,
+        "data": service.with_usage_single(db, method),
     }
 
 

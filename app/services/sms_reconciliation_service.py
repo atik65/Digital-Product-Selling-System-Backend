@@ -10,12 +10,14 @@ from app.schemas.sms_webhook import SmsWebhookPayload, SmsWebhookResponse
 from app.services.sms_parser_service import SmsParserService
 from app.repositories.incoming_sms_repository import IncomingSmsRepository
 from app.repositories.wallet_repository import WalletRepository
+from app.services.payment_transaction_service import PaymentTransactionService
 
 
 class SmsReconciliationService:
     def __init__(self):
         self.sms_repo = IncomingSmsRepository()
         self.wallet_repo = WalletRepository()
+        self.transaction_service = PaymentTransactionService()
 
     def process_incoming_sms(
         self, db: Session, payload: SmsWebhookPayload
@@ -88,6 +90,12 @@ class SmsReconciliationService:
                 if order and order.status in ["PENDING", "PAYMENT_PENDING"]:
                     order.status = "PAID"
 
+                self.transaction_service.record_payment_success(
+                    db,
+                    payment,
+                    fallback_sender_number=parsed.sender_phone,
+                    commit=False,
+                )
                 self.sms_repo.mark_as_matched(
                     db, sms_record, "ORDER_PAYMENT", payment.id
                 )
@@ -149,6 +157,12 @@ class SmsReconciliationService:
                     description=f"Wallet TopUp via {parsed.provider} (TrxID: {parsed.transaction_id})",
                 )
 
+                self.transaction_service.record_topup_success(
+                    db,
+                    topup,
+                    fallback_sender_number=parsed.sender_phone,
+                    commit=False,
+                )
                 self.sms_repo.mark_as_matched(db, sms_record, "WALLET_TOPUP", topup.id)
                 db.commit()
 

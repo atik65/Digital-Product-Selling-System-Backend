@@ -3,6 +3,7 @@ from app.repositories.payment_repository import PaymentRepository
 from app.repositories.topup_repository import TopUpRepository
 from app.repositories.order_repository import OrderRepository
 from app.repositories.payment_method_repository import PaymentMethodRepository
+from app.services.payment_transaction_service import PaymentTransactionService
 from app.models.payment import Payment
 from app.schemas.payment import (
     PaymentSubmitRequest,
@@ -23,6 +24,7 @@ class PaymentService:
         self.topup_repo = TopUpRepository()
         self.order_repo = OrderRepository()
         self.method_repo = PaymentMethodRepository()
+        self.transaction_service = PaymentTransactionService()
 
     def submit_payment(
         self, db: Session, user_id: int, req: PaymentSubmitRequest
@@ -84,6 +86,12 @@ class PaymentService:
                 f"Auto-verified instantly via SMS ({matched_sms.provider})"
             )
             self.order_repo.update_status(db, order, "PAID")
+            self.transaction_service.record_payment_success(
+                db,
+                payment,
+                fallback_sender_number=matched_sms.sender_phone,
+                commit=False,
+            )
             db.commit()
             db.refresh(payment)
 
@@ -117,6 +125,7 @@ class PaymentService:
         updated_payment = self.payment_repo.update_verification(
             db, payment, status="VERIFIED", admin_id=admin_id, note=req.admin_note
         )
+        self.transaction_service.record_payment_success(db, updated_payment)
 
         # 2. Automatically mark order as PAID
         order = payment.order
@@ -135,6 +144,7 @@ class PaymentService:
         updated_payment = self.payment_repo.update_verification(
             db, payment, status="REJECTED", admin_id=admin_id, note=req.admin_note
         )
+        self.transaction_service.revoke_payment(db, updated_payment)
 
         # Ensure order stays in PAYMENT_PENDING
         order = payment.order

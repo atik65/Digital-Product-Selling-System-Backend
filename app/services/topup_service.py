@@ -4,6 +4,7 @@ from app.repositories.topup_repository import TopUpRepository
 from app.repositories.payment_repository import PaymentRepository
 from app.repositories.wallet_repository import WalletRepository
 from app.repositories.payment_method_repository import PaymentMethodRepository
+from app.services.payment_transaction_service import PaymentTransactionService
 from app.models.topup import TopUp
 from app.schemas.topup import TopUpCreateRequest, TopUpReviewRequest
 from app.schemas.pagination import PaginationParams
@@ -16,6 +17,7 @@ class TopUpService:
         self.payment_repo = PaymentRepository()
         self.wallet_repo = WalletRepository()
         self.method_repo = PaymentMethodRepository()
+        self.transaction_service = PaymentTransactionService()
 
     def submit_topup(self, db: Session, user_id: int, req: TopUpCreateRequest) -> TopUp:
         if req.amount <= 0:
@@ -77,6 +79,12 @@ class TopUpService:
                 reference_type="topup",
                 description=f"Wallet TopUp via {matched_sms.provider} (TrxID: {topup.transaction_id})",
             )
+            self.transaction_service.record_topup_success(
+                db,
+                topup,
+                fallback_sender_number=matched_sms.sender_phone,
+                commit=False,
+            )
             db.commit()
             db.refresh(topup)
 
@@ -105,6 +113,7 @@ class TopUpService:
         updated_topup = self.topup_repo.update_status(
             db, topup, status="APPROVED", admin_id=admin_id, note=req.admin_note
         )
+        self.transaction_service.record_topup_success(db, updated_topup)
 
         # 2. Atomically credit customer wallet
         wallet = self.wallet_repo.get_by_user_id(db, topup.user_id, for_update=True)

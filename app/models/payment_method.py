@@ -13,6 +13,9 @@ class PaymentMethod(BaseAuditModel):
     logo = Column(String, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     sort_order = Column(Integer, default=0, nullable=False)
+    # Informational transaction caps (NULL = no limit set). Not enforced.
+    daily_transaction_limit = Column(Integer, nullable=True)
+    monthly_transaction_limit = Column(Integer, nullable=True)
 
     # Relationships
     payments = relationship("Payment", back_populates="payment_method")

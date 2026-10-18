@@ -1120,10 +1120,13 @@ Every endpoint in the Postman collection is detailed below:
 | Method | Endpoint | Auth | Purpose | Key Params |
 | :--- | :--- | :--- | :--- | :--- |
 | `GET` | `/api/v1/payment-methods` | Public | List active payment methods (bKash, etc.)| None |
-| `GET` | `/api/v1/admin/payment-methods` | Admin | List all payment methods for admin | None |
-| `POST` | `/api/v1/admin/payment-methods` | Admin | Create payment gateway channel | Body: `{ name, account_number, instructions?, logo?, sort_order? }` |
-| `PUT` | `/api/v1/admin/payment-methods/{id}`| Admin | Update payment gateway channel | Path: `method_id` |
+| `GET` | `/api/v1/admin/payment-methods` | Admin | List all payment methods for admin, with transaction limits and live counters (`daily_transaction_limit`, `monthly_transaction_limit`, `daily_transaction_count`, `monthly_transaction_count`, `daily_remaining`, `monthly_remaining`) | None |
+| `POST` | `/api/v1/admin/payment-methods` | Admin | Create payment gateway channel | Body: `{ name, account_number, instructions?, logo?, sort_order?, daily_transaction_limit?, monthly_transaction_limit? }` |
+| `PUT` | `/api/v1/admin/payment-methods/{id}`| Admin | Update payment gateway channel. Send a limit as `null` to remove it | Path: `method_id` |
 | `DELETE`| `/api/v1/admin/payment-methods/{id}`| Admin | Delete payment gateway channel | Path: `method_id` |
+| `GET` | `/api/v1/admin/payment-transactions` | Admin | History of successful transactions (verified order payments + approved wallet top-ups), newest first. Each row: sender number, amount, `transaction_at`, method, customer | Query: `page`, `size`, `payment_method_id`, `source_type` (`ORDER_PAYMENT` or `WALLET_TOPUP`), `search` (TrxID / sender number), `date_from`, `date_to` (`YYYY-MM-DD`, inclusive) |
+
+> **Transaction limits & counters:** limits are informational only, nothing is blocked when a limit is reached; the admin changes the number or disables the method manually. A transaction counts once its payment is `VERIFIED` / top-up is `APPROVED` (by an admin or the SMS webhook). If a verified payment is later rejected it stops counting. "Today" and "this month" are calendar periods in Bangladesh time (UTC+6); the month starts on the 1st.
 
 ### 10. Payments & Webhooks
 | Method | Endpoint | Auth | Purpose | Key Params |

@@ -2,13 +2,30 @@ from typing import List
 from sqlalchemy.orm import Session
 from app.repositories.payment_method_repository import PaymentMethodRepository
 from app.models.payment_method import PaymentMethod
-from app.schemas.payment_method import PaymentMethodCreate, PaymentMethodUpdate
+from app.schemas.payment_method import (
+    PaymentMethodAdminResponse,
+    PaymentMethodCreate,
+    PaymentMethodUpdate,
+)
+from app.services.payment_transaction_service import PaymentTransactionService
 from app.core.exceptions import NotFoundException
 
 
 class PaymentMethodService:
     def __init__(self):
         self.repo = PaymentMethodRepository()
+        self.transaction_service = PaymentTransactionService()
+
+    def with_usage(
+        self, db: Session, methods: List[PaymentMethod]
+    ) -> List[PaymentMethodAdminResponse]:
+        """Admin view of payment methods with daily / monthly transaction counts."""
+        return self.transaction_service.attach_usage(db, methods)
+
+    def with_usage_single(
+        self, db: Session, method: PaymentMethod
+    ) -> PaymentMethodAdminResponse:
+        return self.with_usage(db, [method])[0]
 
     def get_payment_methods(
         self, db: Session, active_only: bool = True

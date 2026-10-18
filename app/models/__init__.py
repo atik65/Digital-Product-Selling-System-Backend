@@ -9,6 +9,7 @@ from app.models.order_item import OrderItem
 from app.models.coupon import Coupon
 from app.models.payment_method import PaymentMethod
 from app.models.payment import Payment
+from app.models.payment_transaction import PaymentTransaction
 from app.models.wallet import Wallet
 from app.models.wallet_transaction import WalletTransaction
 from app.models.topup import TopUp
@@ -29,6 +30,7 @@ __all__ = [
     "Coupon",
     "PaymentMethod",
     "Payment",
+    "PaymentTransaction",
     "Wallet",
     "WalletTransaction",
     "TopUp",
