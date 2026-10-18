@@ -2,6 +2,7 @@ from typing import Optional
 from sqlalchemy.orm import Session, joinedload
 from app.models.order import Order
 from app.models.order_item import OrderItem
+from app.models.payment import Payment
 from app.models.user import User
 from app.schemas.pagination import PaginationParams
 from app.utils.pagination import get_paginated_response
@@ -93,6 +94,7 @@ class OrderRepository:
                 db.query(Order)
                 .options(
                     joinedload(Order.items),
+                    joinedload(Order.payments).joinedload(Payment.payment_method),
                     joinedload(Order.user).joinedload(User.wallet),
                 )
                 .filter(Order.is_deleted.is_(False))

@@ -562,3 +562,44 @@ def test_history_requires_admin(client, auth_headers):
     assert client.get("/api/v1/admin/payment-transactions").status_code == 401
     res = client.get("/api/v1/admin/payment-transactions", headers=auth_headers)
     assert res.status_code == 403
+
+
+# ------------------------------------------- TrxIDs on the admin orders list
+
+
+def test_admin_order_list_shows_submitted_transaction_ids(
+    client, admin_auth_headers, auth_headers
+):
+    method = _create_method(client, admin_auth_headers)
+    order_id = _create_order(client, admin_auth_headers, auth_headers, method["id"])
+
+    def admin_order():
+        res = client.get("/api/v1/admin/orders", headers=admin_auth_headers)
+        assert res.status_code == 200
+        return next(o for o in res.json()["data"]["items"] if o["id"] == order_id)
+
+    # No payment submitted yet
+    assert admin_order()["payments"] == []
+
+    payment_id = _submit_payment(
+        client, auth_headers, order_id, method["id"], "TRX-ORDER-LIST-1"
+    )
+    payments = admin_order()["payments"]
+    assert len(payments) == 1
+    assert payments[0]["id"] == payment_id
+    assert payments[0]["transaction_id"] == "TRX-ORDER-LIST-1"
+    assert payments[0]["sender_number"] == "01711223344"
+    assert payments[0]["status"] == "VERIFYING"
+    assert payments[0]["payment_method"]["name"] == "bKash Personal"
+
+    # Status / note updates keep returning the payments for the admin UI
+    res = client.patch(
+        f"/api/v1/admin/orders/{order_id}/note",
+        json={"admin_note": "checking"},
+        headers=admin_auth_headers,
+    )
+    assert res.json()["data"]["payments"][0]["transaction_id"] == "TRX-ORDER-LIST-1"
+
+    # Customer-facing order responses are unchanged (no payments field)
+    mine = client.get("/api/v1/orders/my-orders", headers=auth_headers)
+    assert "payments" not in mine.json()["data"]["items"][0]

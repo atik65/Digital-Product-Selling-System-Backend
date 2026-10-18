@@ -56,6 +56,7 @@ class OrderNoteUpdate(BaseModel):
 
 
 from app.schemas.user_brief import UserBriefResponse
+from app.schemas.payment_method import PaymentMethodResponse
 
 
 class OrderResponse(BaseModel):
@@ -76,3 +77,21 @@ class OrderResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
+class OrderPaymentBrief(BaseModel):
+    id: int
+    payment_method_id: int
+    amount: float
+    transaction_id: str
+    sender_number: Optional[str] = None
+    status: str  # VERIFYING, VERIFIED, REJECTED, ...
+    created_at: datetime
+    payment_method: Optional[PaymentMethodResponse] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AdminOrderResponse(OrderResponse):
+    """Admin view of an order, including the payment submissions (TrxIDs) made for it."""
+
+    payments: List[OrderPaymentBrief] = []

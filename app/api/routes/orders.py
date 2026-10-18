@@ -12,6 +12,7 @@ from app.schemas.order import (
     CheckoutPreviewResponse,
     DirectOrderCreate,
     OrderResponse,
+    AdminOrderResponse,
     OrderStatusUpdate,
     OrderNoteUpdate,
 )
@@ -138,9 +139,9 @@ def cancel_order(
 
 @router.get(
     "/admin/orders",
-    response_model=StandardResponse[PaginatedData[OrderResponse]],
+    response_model=StandardResponse[PaginatedData[AdminOrderResponse]],
     status_code=status.HTTP_200_OK,
-    summary="List all orders for admin",
+    summary="List all orders for admin (with submitted payment TrxIDs)",
 )
 def admin_list_orders(
     status_filter: Optional[str] = None,
@@ -162,7 +163,7 @@ def admin_list_orders(
 
 @router.patch(
     "/admin/orders/{order_id}/status",
-    response_model=StandardResponse[OrderResponse],
+    response_model=StandardResponse[AdminOrderResponse],
     status_code=status.HTTP_200_OK,
     summary="Update order processing status",
 )
@@ -183,7 +184,7 @@ def admin_update_order_status(
 
 @router.patch(
     "/admin/orders/{order_id}/note",
-    response_model=StandardResponse[OrderResponse],
+    response_model=StandardResponse[AdminOrderResponse],
     status_code=status.HTTP_200_OK,
     summary="Update admin internal note or fulfillment details",
 )
